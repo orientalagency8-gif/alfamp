@@ -1,0 +1,21 @@
+{
+  "name": "alfa-mp-master-server",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Alfa MP — Master Server (server registry, heartbeat API)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "dev": "node --experimental-strip-types --watch --no-warnings src/index.ts",
+    "start": "node --experimental-strip-types --no-warnings src/index.ts",
+    "test": "node --experimental-strip-types --no-warnings --test src/*.test.ts"
+  },
+  "dependencies": {
+    "fastify": "^5.1.0",
+    "@fastify/cors": "^10.0.1",
+    "pino-pretty": "^13.0.0",
+    "zod": "^3.23.8"
+  }
+}
