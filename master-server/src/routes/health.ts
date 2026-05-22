@@ -8,12 +8,13 @@ export async function healthRoutes(app: FastifyInstance) {
     const dbOk = await dbHealthCheck();
     return {
       name: 'Alfa MP Master Server',
-      version: '0.1.0',
+      version: '0.2.0',
       status: dbOk ? 'ok' : 'degraded',
       uptime: Math.floor(process.uptime()),
       db: dbOk ? 'connected' : 'down',
       ...counts,
-      docs: '/v1/docs'
+      docs: '/v1/docs',
+      legal: '/v1/legal'
     };
   });
 

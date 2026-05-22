@@ -1,49 +1,35 @@
 # Alfa MP
 
-Мультиплеер-платформа для GTA 5. Форк CitizenFX (FiveM) с собственным netcode, лаунчером и инфраструктурой.
+Open-source multiplayer platform for GTA V, forked from CitizenFX with improved netcode and tooling. Currently in alpha.
 
-**Статус:** day 1, инициализация репозитория.
+**Status:** development. Master-server live at http://104.194.140.221.
 
-## Главная техническая цель
+## Architecture
 
-Сделать синхронизацию транспорта **заметно плавнее**, чем в RAGE MP и стоковом FiveM, через:
+See [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) for the complete design document.
 
-- 60 Hz tickrate (vs 30 у конкурентов)
-- State-authoritative модель vehicle sync вместо owner-authoritative
-- Soft reconciliation (плавная коррекция) вместо телепортов
-- Server-side rewind для hit-registration
-- Velocity/steering/throttle sync вместо чистой position-snapshot
-- Driver handoff protocol для пересадок без подбросов
-- Server-arbitrated collision resolution
+- [master-server/](master-server/) — server registry & auth API (Fastify + PostgreSQL)
+- [infra/](infra/) — VPS setup & deploy automation
+- [.github/workflows/](.github/workflows/) — CI/CD (auto-deploy on push to main)
+- [docs/](docs/) — design documents, plans, legal
 
-## Архитектура
+## Tech preview
 
-- **client/** — форк CitizenFX (GTA 5 only, RedM-код вырезан), наши патчи netcode
-- **launcher/** — собственный лаунчер (Tauri), регистрация/логин, server browser, авто-апдейт
-- **master-server/** — реестр игровых серверов, heartbeat, валидация API-ключей
-- **backend/** — аккаунты, регистрация серверов, админ-дашборд, banlist
-- **infra/** — Docker, deploy-скрипты, мониторинг
+```
+Game Servers   ──heartbeat──►  Master Server  ◄──server browser──  Launcher
+  (FXServer fork)                (Fastify + PG)                       (Tauri)
+```
 
-## Только GTA 5
+## Legal
 
-RedM, RDR2, любые другие игры — **не поддерживаем**. Это сознательное решение для упрощения кода и фокуса.
+Grand Theft Auto and Grand Theft Auto: V are registered trademarks of Take-Two Interactive Software. **Alfa MP is not affiliated with or endorsed by Take-Two Interactive Software, Rockstar Games, or any of their affiliates**, and is not responsible for user-generated content. Alfa MP does not host user servers. All user content is the property of its respective owners. All rights reserved.
 
-## Команда
+© 2007–2026 Take-Two Interactive Software and its subsidiaries. All other marks and trademarks are properties of their respective owners. All rights reserved. © 2026 Alfa MP.
 
-- **Owner** — стратегия, маркетинг, тестирование, сообщество
-- **Claude Opus 4.7** — весь код, DevOps, документация
+See [docs/LEGAL.md](docs/LEGAL.md) for full legal disclaimers.
 
-## Цели по таймлайну
+## Built on
 
-| Этап | Срок |
-|---|---|
-| Сборка чистого форка под нашим брендом | 2 недели |
-| Свой лаунчер + мастер-сервер | 4 недели |
-| Базовые улучшения netcode | 2 месяца |
-| Полная переделка vehicle sync | 3–4 месяца |
-| Закрытая бета (20–50 игроков) | 4–6 месяц |
-| Публичный запуск | 5–7 месяц |
+- [CitizenFX](https://github.com/citizenfx/fivem) — BSD-3-Clause licensed open-source GTA V multiplayer framework
 
-## Лицензия
-
-Форк CitizenFX распространяется под Modified BSD 3-clause (см. оригинал). Наши собственные модули — будет выбрана позже (вероятно proprietary для лаунчера/backend, open для SDK).
+Players must own a legal copy of Grand Theft Auto V. Alfa MP does not distribute any game assets.
