@@ -85,8 +85,19 @@ def install_and_start(cli):
     print("→ Stopping existing PM2 process (если есть)")
     run(cli, "pm2 delete alfa-master 2>/dev/null || true", check=False)
 
-    print("→ Starting master-server via PM2")
-    env = "DEV_API_KEY=alfa_dev_owner_local DEV_SEED=true PORT=8080 NODE_ENV=production"
+    print("→ Reading Postgres password from /root/.alfamp_db_pass")
+    rc, pg_pass, _ = run(cli, "cat /root/.alfamp_db_pass", check=False)
+    pg_pass = pg_pass.strip()
+
+    print("→ Starting master-server via PM2 (Postgres-backed)")
+    env = (
+        f"DEV_API_KEY=alfa_dev_owner_local "
+        f"DEV_SEED=true "
+        f"PORT=8080 "
+        f"NODE_ENV=production "
+        f"PG_HOST=127.0.0.1 PG_PORT=5432 PG_DB=alfamp PG_USER=alfamp "
+        f"PG_PASSWORD='{pg_pass}'"
+    )
     run(cli, (
         f"cd {REMOTE_MASTER} && {env} "
         f"pm2 start npm --name alfa-master --time -- start"
