@@ -1,6 +1,7 @@
 @echo off
 cd /d %~dp0
 title Alfa MP Master Server
+chcp 65001 >nul
 
 if not exist node_modules (
     echo.
@@ -16,9 +17,19 @@ if not exist node_modules (
     echo.
 )
 
-echo Starting Alfa MP Master Server...
-echo Open http://localhost:8080 in your browser
-echo Press Ctrl+C to stop
+REM Fixed dev API key для удобства разработки (в production будет настоящая ротация)
+set DEV_API_KEY=alfa_dev_owner_local
+REM Подсадить демо-серверы при старте
+set DEV_SEED=true
+
+echo.
+echo ================================================
+echo   Alfa MP Master Server
+echo   Open http://localhost:8080 in your browser
+echo   Admin dashboard: http://localhost:8080/admin
+echo   API docs:        http://localhost:8080/v1/docs
+echo   Press Ctrl+C to stop
+echo ================================================
 echo.
 call npm run dev
 pause

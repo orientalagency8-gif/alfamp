@@ -19,6 +19,7 @@ interface ServerInfo {
   lastHeartbeat: number;
   registeredAt: number;
   verified: boolean;
+  isDemo?: boolean;       // фейковые серверы для DEV_SEED — авто-обновляем heartbeat
 }
 
 type PublicServer = Omit<ServerInfo, 'ownerKey'>;
@@ -36,14 +37,51 @@ interface ApiKey {
 const servers = new Map<string, ServerInfo>();
 const apiKeys = new Map<string, ApiKey>();
 
-// Bootstrap dev API-key — печатается в консоль при старте,
-// используется в тестовых командах ниже
-const DEV_OWNER_KEY = `alfa_dev_${crypto.randomBytes(12).toString('hex')}`;
+// Bootstrap dev API-key — берётся из env DEV_API_KEY (если задана),
+// иначе генерится случайно. В обоих случаях печатается в лог.
+const DEV_OWNER_KEY = process.env.DEV_API_KEY ?? `alfa_dev_${crypto.randomBytes(12).toString('hex')}`;
 apiKeys.set(DEV_OWNER_KEY, {
   ownerEmail: 'owner@alfamp.local',
   createdAt: Date.now(),
-  label: 'Bootstrap dev key (auto-generated on startup)'
+  label: 'Bootstrap dev key'
 });
+
+// Опционально подсаживаем демо-серверы для UI/тестов (DEV_SEED=true)
+function seedDemoServers() {
+  const samples = [
+    { name: 'Official Roleplay',  endpoint: '193.42.110.21:30120', slots: 128, players: 87,  tags: ['rp','official'],     region: 'EU', verified: true  },
+    { name: 'Official Drift',     endpoint: '193.42.110.22:30120', slots: 64,  players: 23,  tags: ['drift','official'],  region: 'EU', verified: true  },
+    { name: 'Russian Freeroam',   endpoint: '5.180.21.4:30120',    slots: 64,  players: 41,  tags: ['freeroam','ru'],     region: 'RU', verified: false },
+    { name: 'German RP World',    endpoint: '78.46.99.10:30120',   slots: 100, players: 94,  tags: ['rp','de','german'],  region: 'DE', verified: true  },
+    { name: 'Cops & Robbers',     endpoint: '45.91.20.7:30120',    slots: 32,  players: 8,   tags: ['pvp','arena'],       region: 'EU', verified: false },
+    { name: 'LA Custom Drift',    endpoint: '104.21.30.55:30120',  slots: 32,  players: 18,  tags: ['drift','us','custom'],region: 'US', verified: false }
+  ];
+  const now = Date.now();
+  for (const s of samples) {
+    const id = crypto.randomBytes(12).toString('hex');
+    servers.set(id, {
+      id, ...s,
+      ownerKey: DEV_OWNER_KEY,
+      lastHeartbeat: now,
+      registeredAt: now - Math.floor(Math.random() * 86400_000),
+      isDemo: true
+    });
+  }
+}
+if (process.env.DEV_SEED === 'true' || process.env.DEV_SEED === '1') {
+  seedDemoServers();
+  // Авто-heartbeat для демо-серверов (имитируем что они живые),
+  // и иногда колеблем число игроков для реалистичности
+  setInterval(() => {
+    for (const srv of servers.values()) {
+      if (srv.isDemo) {
+        srv.lastHeartbeat = Date.now();
+        const drift = Math.floor((Math.random() - 0.5) * 6);
+        srv.players = Math.max(0, Math.min(srv.slots, srv.players + drift));
+      }
+    }
+  }, 20_000);
+}
 
 // ============================================================
 // Schemas
