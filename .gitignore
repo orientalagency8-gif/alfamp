@@ -1,0 +1,43 @@
+# Build artifacts
+build/
+dist/
+out/
+target/
+node_modules/
+*.exe
+*.dll
+*.pdb
+*.obj
+*.o
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Secrets
+*.env
+*.env.local
+secrets.cfg
+secrets/
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
+# Local config
+local.config.json
+config.local.*
+
+# FiveM upstream (will be submodule or separate dir)
+upstream/
+fivem-src/
