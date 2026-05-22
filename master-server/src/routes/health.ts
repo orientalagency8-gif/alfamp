@@ -56,8 +56,28 @@ h3{margin-top:0}
 <pre>{ "serverId":"&lt;UUID&gt;", "apiKey":"alfa_...", "players":12 }</pre>
 <p>Шлётся каждые 30 сек. Сервер пропадает из <code>/v1/servers</code> после 60 сек без пинга.</p></section>
 
-<h2>Auth (coming soon)</h2>
-<p>Регистрация хостеров и управление API-ключами — на подходе.</p>
+<h2>Auth</h2>
+<section><h3><span class="m post">POST</span> /v1/auth/register</h3>
+<pre>{ "email":"...", "password":"min12chars", "display_name":"optional" }</pre>
+<p>Rate-limit: 5 регистраций / 15 мин с IP.</p></section>
+
+<section><h3><span class="m post">POST</span> /v1/auth/login</h3>
+<pre>{ "email":"...", "password":"..." }</pre>
+<p>Возвращает <code>access_token</code> (15 мин) + <code>refresh_token</code> (30 дней).</p></section>
+
+<section><h3><span class="m post">POST</span> /v1/auth/refresh</h3>
+<pre>{ "refresh_token":"..." }</pre>
+<p>Rotation — старый токен инвалидируется, выдаётся новый.</p></section>
+
+<section><h3><span class="m post">POST</span> /v1/auth/logout</h3>
+<pre>{ "refresh_token":"..." }</pre></section>
+
+<h2>Account (требует Bearer JWT)</h2>
+<section><h3><span class="m get">GET</span> /v1/me</h3></section>
+<section><h3><span class="m get">GET</span> /v1/me/api-keys</h3></section>
+<section><h3><span class="m post">POST</span> /v1/me/api-keys</h3>
+<pre>{ "label":"My Drift Server" }</pre></section>
+<section><h3><span class="m get">GET</span> /v1/me/servers</h3></section>
 
 </body></html>`);
   });

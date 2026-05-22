@@ -205,6 +205,117 @@ function stripPrivateFields(s: Server): PublicServer {
   return pub;
 }
 
+// ============ Refresh Tokens ============
+
+export interface RefreshTokenRow {
+  token_hash: string;
+  user_id: string;
+  issued_at: Date;
+  expires_at: Date;
+  last_used: Date | null;
+  user_agent: string | null;
+  ip: string | null;
+  revoked_at: Date | null;
+  family_id: string;
+}
+
+export async function storeRefreshToken(
+  token_hash: string,
+  user_id: string,
+  family_id: string,
+  expires_at: Date,
+  user_agent: string | null,
+  ip: string | null
+): Promise<void> {
+  await pool.query(
+    `INSERT INTO refresh_tokens(token_hash, user_id, family_id, expires_at, user_agent, ip)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [token_hash, user_id, family_id, expires_at, user_agent, ip]
+  );
+}
+
+export async function getRefreshToken(token_hash: string): Promise<RefreshTokenRow | null> {
+  const r = await pool.query<RefreshTokenRow>(
+    `SELECT * FROM refresh_tokens WHERE token_hash = $1`,
+    [token_hash]
+  );
+  return r.rows[0] ?? null;
+}
+
+export async function revokeRefreshToken(token_hash: string): Promise<boolean> {
+  const r = await pool.query(
+    `UPDATE refresh_tokens SET revoked_at = NOW() WHERE token_hash = $1 AND revoked_at IS NULL`,
+    [token_hash]
+  );
+  return (r.rowCount ?? 0) > 0;
+}
+
+/** Reuse detection: revoke ALL tokens in this family — обычно делается при попытке reuse */
+export async function revokeFamilyTokens(family_id: string): Promise<number> {
+  const r = await pool.query(
+    `UPDATE refresh_tokens SET revoked_at = NOW() WHERE family_id = $1 AND revoked_at IS NULL`,
+    [family_id]
+  );
+  return r.rowCount ?? 0;
+}
+
+export async function revokeAllUserTokens(user_id: string): Promise<number> {
+  const r = await pool.query(
+    `UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`,
+    [user_id]
+  );
+  return r.rowCount ?? 0;
+}
+
+export async function pruneExpiredTokens(): Promise<number> {
+  const r = await pool.query(
+    `DELETE FROM refresh_tokens WHERE expires_at < NOW() - INTERVAL '7 days'`
+  );
+  return r.rowCount ?? 0;
+}
+
+// ============ Audit Log ============
+
+export async function logEvent(
+  event: string,
+  opts: {
+    user_id?: string | null;
+    target?: string | null;
+    ip?: string | null;
+    user_agent?: string | null;
+    metadata?: Record<string, unknown>;
+  } = {}
+): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO audit_log(user_id, event, target, ip, user_agent, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [opts.user_id ?? null, event, opts.target ?? null, opts.ip ?? null, opts.user_agent ?? null, JSON.stringify(opts.metadata ?? {})]
+    );
+  } catch (e) {
+    // Audit failures must NOT break the request flow
+    console.error('[audit] failed to log event:', event, e);
+  }
+}
+
+// ============ Login Attempts ============
+
+export async function logLoginAttempt(email: string | null, ip: string, success: boolean): Promise<void> {
+  await pool.query(
+    `INSERT INTO login_attempts(email, ip, success) VALUES ($1, $2, $3)`,
+    [email, ip, success]
+  );
+}
+
+export async function countFailedLogins(ip: string, sinceSec: number): Promise<number> {
+  const r = await pool.query<{ c: number }>(
+    `SELECT COUNT(*)::INT AS c FROM login_attempts
+     WHERE ip = $1 AND success = FALSE AND at > NOW() - ($2 || ' seconds')::INTERVAL`,
+    [ip, String(sinceSec)]
+  );
+  return r.rows[0]!.c;
+}
+
 // ============ Stats ============
 
 export async function getCounts() {

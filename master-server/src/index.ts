@@ -1,30 +1,59 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import jwt from '@fastify/jwt';
+import rateLimit from '@fastify/rate-limit';
+import helmet from '@fastify/helmet';
 
 import { runMigrations, pool } from './db/pool.ts';
 import * as repo from './db/repo.ts';
 import { seedIfEmpty } from './seed.ts';
 import { healthRoutes } from './routes/health.ts';
 import { serversRoutes } from './routes/servers.ts';
+import { authRoutes } from './routes/auth.ts';
+import { meRoutes } from './routes/me.ts';
+import authGuard from './auth/guard.ts';
+import { loadJwtSecret } from './auth/tokens.ts';
 
 const app = Fastify({
   logger: {
     transport: {
       target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: 'HH:MM:ss',
-        ignore: 'pid,hostname'
-      }
-    }
-  }
+      options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' }
+    },
+    redact: ['req.headers.authorization', 'req.headers.cookie', 'req.body.password', 'req.body.refresh_token']
+  },
+  trustProxy: true,         // мы за nginx, X-Forwarded-For нужен
+  bodyLimit: 1024 * 64      // 64 KB достаточно для API
 });
 
+// --- Plugins ----------------------------------------------------------------
+
+await app.register(helmet, { contentSecurityPolicy: false });
 await app.register(cors, { origin: true });
+await app.register(rateLimit, {
+  global: true,
+  max: 300,
+  timeWindow: '1 minute',
+  keyGenerator: (req) => (
+    (req.headers['x-real-ip'] as string)
+    || (req.headers['x-forwarded-for'] as string || '').split(',')[0]?.trim()
+    || req.ip
+  )
+});
+await app.register(jwt, {
+  secret: loadJwtSecret(),
+  sign: { algorithm: 'HS256' }
+});
+await app.register(authGuard);
+
+// --- Routes -----------------------------------------------------------------
+
 await app.register(healthRoutes);
 await app.register(serversRoutes);
+await app.register(authRoutes);
+await app.register(meRoutes);
 
-// ====== Migrations + seed ======
+// --- Migrations + seed ------------------------------------------------------
 
 try {
   await runMigrations();
@@ -39,21 +68,25 @@ if (process.env.DEV_SEED === 'true' || process.env.DEV_SEED === '1') {
   devApiKey = seed.devApiKey;
 }
 
-// ====== Background tasks ======
+// --- Background tasks -------------------------------------------------------
 
-// Обновляем heartbeat демо-серверов каждые 20 сек + лёгкий дрифт players
 setInterval(() => {
-  repo.refreshDemoHeartbeats().catch(err => app.log.error({ err }, 'refreshDemoHeartbeats failed'));
+  repo.refreshDemoHeartbeats().catch(err => app.log.error({ err }, 'refreshDemoHeartbeats'));
 }, 20_000);
 
-// Чистим dead-non-demo серверы каждые 60 сек
 setInterval(() => {
   repo.pruneDeadServers(120)
     .then(n => { if (n > 0) app.log.warn({ count: n }, 'pruned dead servers'); })
-    .catch(err => app.log.error({ err }, 'pruneDeadServers failed'));
+    .catch(err => app.log.error({ err }, 'pruneDeadServers'));
 }, 60_000);
 
-// ====== Start ======
+setInterval(() => {
+  repo.pruneExpiredTokens()
+    .then(n => { if (n > 0) app.log.info({ count: n }, 'pruned expired refresh tokens'); })
+    .catch(err => app.log.error({ err }, 'pruneExpiredTokens'));
+}, 60 * 60 * 1000);  // раз в час
+
+// --- Start ------------------------------------------------------------------
 
 const PORT = Number(process.env.PORT) || 8080;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -61,7 +94,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 try {
   await app.listen({ port: PORT, host: HOST });
   app.log.info('═══════════════════════════════════════════════════');
-  app.log.info(`  Alfa MP Master Server v0.1.0 (PostgreSQL)`);
+  app.log.info(`  Alfa MP Master Server v0.2.0 (Auth + PG)`);
   app.log.info(`  http://localhost:${PORT}`);
   app.log.info(`  http://localhost:${PORT}/v1/docs`);
   app.log.info('═══════════════════════════════════════════════════');
@@ -72,12 +105,11 @@ try {
   process.exit(1);
 }
 
-// Graceful shutdown
 async function shutdown(sig: string) {
-  app.log.info(`${sig} received, shutting down...`);
+  app.log.info(`${sig} — shutting down...`);
   await app.close();
   await pool.end();
   process.exit(0);
 }
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
