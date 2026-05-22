@@ -1,0 +1,50 @@
+# Alfa MP — Game Server stack
+#
+# Запуск:
+#   cd /opt/alfamp/repo/game-server
+#   docker compose up -d
+#
+# Перед первым запуском убедись, что .env заполнен (см. .env.example).
+
+services:
+  fxserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: alfamp/game-server:latest
+    container_name: alfa-game-server
+    restart: unless-stopped
+    ports:
+      - "30120:30120/tcp"
+      - "30120:30120/udp"
+    environment:
+      # heartbeat sidecar
+      ALFAMP_API_KEY: ${ALFAMP_API_KEY}
+      MASTER_URL: ${MASTER_URL:-http://104.194.140.221}
+      SERVER_NAME: ${SERVER_NAME:-Alfa Official Test}
+      SERVER_SLOTS: ${SERVER_SLOTS:-32}
+      SERVER_REGION: ${SERVER_REGION:-GB}
+      SERVER_TAGS: ${SERVER_TAGS:-official,test}
+      SERVER_ENDPOINT: ${SERVER_ENDPOINT}
+      HEARTBEAT_INTERVAL_SEC: 30
+      # FXServer
+      LICENSE_KEY: ${LICENSE_KEY}
+      RCON_PASSWORD: ${RCON_PASSWORD}
+    volumes:
+      - server-data:/server-data
+      - ./server.cfg:/server-data/server.cfg:ro
+      - ./resources:/server-data/resources:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Ограничиваем CPU/RAM на разумное (4 vCPU / 8 GB у нашего VPS)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 3G
+
+volumes:
+  server-data:
