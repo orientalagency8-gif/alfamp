@@ -1,0 +1,6 @@
+name = "hello"
+type = "script"
+client-files = ["client_packages/index.js"]
+side = "shared"
+description = "Hello-world demo — works on RAGE MP unchanged, migrates to Alfa MP in one command"
+author = "alfa-mp"

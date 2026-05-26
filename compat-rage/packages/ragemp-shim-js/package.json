@@ -1,0 +1,14 @@
+{
+  "name": "@alfamp/ragemp-shim",
+  "version": "0.2.0",
+  "description": "Drop-in RAGE MP `mp.*` API shim that runs your JS server-side resources on Alfa MP / FXServer with minimal source changes.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": ["src/**/*.js", "README.md", "LICENSE"],
+  "keywords": ["alfamp", "ragemp", "shim", "compat", "fivem", "migration"],
+  "repository": "github:orientalagency8-gif/alfamp"
+}

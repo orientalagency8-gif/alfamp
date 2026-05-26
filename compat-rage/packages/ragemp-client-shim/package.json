@@ -1,0 +1,8 @@
+{
+  "name": "@alfamp/ragemp-client-shim",
+  "version": "0.2.0",
+  "description": "Client-side RAGE MP `mp.*` API shim — bridges CEF browser API to FXServer NUI so UI screens render identically.",
+  "license": "MIT",
+  "main": "src/client.js",
+  "files": ["src/**/*.js", "README.md"]
+}
