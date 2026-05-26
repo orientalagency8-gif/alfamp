@@ -3,6 +3,8 @@ use std::sync::Arc;
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
+use tauri::tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState};
+use tauri::menu::{Menu, MenuItem};
 use tokio::sync::Mutex;
 
 mod gta;
@@ -27,6 +29,7 @@ pub struct ClientState {
 
 pub struct AppStateInner {
     pub downloading: bool,
+    pub game_child_pid: Option<u32>,
 }
 pub type AppState = Arc<Mutex<AppStateInner>>;
 
@@ -43,10 +46,6 @@ fn client_state() -> ClientState {
         .ok()
         .map(|s| s.trim().to_string());
 
-    // Stub detection — early versions shipped a 200KB placeholder AlfaMP.exe.
-    // Treat the install as "not installed" if either:
-    //   • the exe is suspiciously small (<2 MB)  — real CFX client is 5+ MB
-    //   • or version.txt explicitly marks it as a stub
     let real_size_ok = std::fs::metadata(&client_path)
         .map(|m| m.len() >= 2 * 1024 * 1024)
         .unwrap_or(false);
@@ -68,7 +67,6 @@ fn client_state() -> ClientState {
 
 #[tauri::command]
 fn wipe_client() -> Result<(), String> {
-    // Force-remove the install dir so the launcher offers a clean install again.
     let dir = client::install_dir();
     if dir.exists() {
         std::fs::remove_dir_all(&dir).map_err(|e| format!("wipe failed: {}", e))?;
@@ -81,9 +79,7 @@ fn wipe_client() -> Result<(), String> {
 async fn download_client(app: AppHandle, state: tauri::State<'_, AppState>, url: String) -> Result<(), String> {
     {
         let mut s = state.lock().await;
-        if s.downloading {
-            return Err("already downloading".into());
-        }
+        if s.downloading { return Err("already downloading".into()); }
         s.downloading = true;
     }
     let result = client::download_and_install(app.clone(), url).await;
@@ -92,34 +88,69 @@ async fn download_client(app: AppHandle, state: tauri::State<'_, AppState>, url:
         s.downloading = false;
     }
     match &result {
-        Ok(()) => {
-            let _ = app.emit("client:progress", ProgressPayload {
-                stage: "done".into(), received: 0, total: 0, message: None,
-            });
-        }
-        Err(e) => {
-            let _ = app.emit("client:progress", ProgressPayload {
-                stage: "error".into(), received: 0, total: 0, message: Some(e.to_string()),
-            });
-        }
+        Ok(()) => { let _ = app.emit("client:progress", ProgressPayload {
+            stage: "done".into(), received: 0, total: 0, message: None }); }
+        Err(e) => { let _ = app.emit("client:progress", ProgressPayload {
+            stage: "error".into(), received: 0, total: 0, message: Some(e.to_string()) }); }
     }
     result.map_err(|e| e.to_string())
 }
 
+/// Spawn AlfaMP.exe with optional +connect arg. Returns the child PID.
+/// The launcher hides itself + monitors the child via `monitor_game()` so it
+/// restores when the game exits.
 #[tauri::command]
-fn launch_client(endpoint: Option<String>) -> Result<(), String> {
+async fn launch_client(app: AppHandle, state: tauri::State<'_, AppState>, endpoint: Option<String>) -> Result<u32, String> {
     let install_dir = client::install_dir();
     let exe = install_dir.join("AlfaMP.exe");
     if !exe.exists() {
         return Err(format!("Alfa MP client not installed at {}", exe.display()));
     }
+
     let mut cmd = std::process::Command::new(&exe);
     cmd.current_dir(&install_dir);
     if let Some(ep) = endpoint.filter(|s| !s.is_empty()) {
         cmd.arg("+connect").arg(ep);
     }
-    cmd.spawn().map_err(|e| format!("failed to launch client: {}", e))?;
-    Ok(())
+
+    // On Windows, mark the child as a separate process group so closing our
+    // launcher doesn't take it down (CTRL-events scoped to group).
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NEW_PROCESS_GROUP: u32 = 0x00000200;
+        cmd.creation_flags(CREATE_NEW_PROCESS_GROUP);
+    }
+
+    let child = cmd.spawn().map_err(|e| format!("spawn failed: {}", e))?;
+    let pid = child.id();
+
+    {
+        let mut s = state.lock().await;
+        s.game_child_pid = Some(pid);
+    }
+    let _ = app.emit("game:started", pid);
+
+    // Hide the launcher window — user is now playing.
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.hide();
+    }
+
+    // Background watcher: poll for child exit, then restore launcher.
+    let app2 = app.clone();
+    std::thread::spawn(move || {
+        let mut child = child;
+        let _ = child.wait(); // blocks until the process exits
+
+        let _ = app2.emit("game:exited", pid);
+        if let Some(win) = app2.get_webview_window("main") {
+            let _ = win.show();
+            let _ = win.unminimize();
+            let _ = win.set_focus();
+        }
+    });
+
+    Ok(pid)
 }
 
 #[tauri::command]
@@ -127,17 +158,30 @@ fn open_url(url: String) -> Result<(), String> {
     open_external(&url).map_err(|e| e.to_string())
 }
 
-// Back-compat: the splash window was removed in v0.1.5 but the old splash.html
-// (if still served) calls `finish_splash`. Accept the invoke silently.
+#[tauri::command]
+fn show_main_window(app: AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.show();
+        let _ = win.unminimize();
+        let _ = win.set_focus();
+    }
+}
+
+#[tauri::command]
+fn hide_main_window(app: AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.hide();
+    }
+}
+
+// Kept for back-compat with any old splash.html that calls it.
 #[tauri::command]
 fn finish_splash() {}
 
 fn open_external(url: &str) -> anyhow::Result<()> {
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("cmd")
-            .args(["/C", "start", "", url])
-            .spawn()?;
+        std::process::Command::new("cmd").args(["/C", "start", "", url]).spawn()?;
         return Ok(());
     }
     #[cfg(target_os = "macos")]
@@ -150,7 +194,10 @@ fn open_external(url: &str) -> anyhow::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let state: AppState = Arc::new(Mutex::new(AppStateInner { downloading: false }));
+    let state: AppState = Arc::new(Mutex::new(AppStateInner {
+        downloading: false,
+        game_child_pid: None,
+    }));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
@@ -166,15 +213,13 @@ pub fn run() {
             launch_client,
             open_url,
             wipe_client,
+            show_main_window,
+            hide_main_window,
         ])
         .setup(|app| {
-            // Ensure the install dir exists early.
             let _ = std::fs::create_dir_all(client::install_dir());
 
-            // Force main window geometry on startup. Belt-and-suspenders fix for
-            // a Tauri 2 quirk where main windows configured with `visible: false`
-            // (or sometimes even visible:true) come up at a tiny default size
-            // on Windows.
+            // Force the main window geometry on startup.
             if let Some(main) = app.get_webview_window("main") {
                 let _ = main.set_min_size(Some(tauri::LogicalSize::new(980.0, 600.0)));
                 let _ = main.set_size(tauri::LogicalSize::new(1280.0, 760.0));
@@ -186,6 +231,41 @@ pub fn run() {
                 #[cfg(debug_assertions)]
                 main.open_devtools();
             }
+
+            // System-tray icon: lets the user restore the launcher after the game
+            // hides it on connect. Right-click: Show / Quit menu.
+            let show_item = MenuItem::with_id(app, "show", "Открыть Alfa MP", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Выйти", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
+
+            let _tray = TrayIconBuilder::with_id("alfamp-tray")
+                .tooltip("Alfa MP — нажмите чтобы открыть")
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .on_menu_event(|app, ev| {
+                    match ev.id.as_ref() {
+                        "show" => {
+                            if let Some(win) = app.get_webview_window("main") {
+                                let _ = win.show();
+                                let _ = win.unminimize();
+                                let _ = win.set_focus();
+                            }
+                        }
+                        "quit" => { app.exit(0); }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, ev| {
+                    if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = ev {
+                        let app = tray.app_handle();
+                        if let Some(win) = app.get_webview_window("main") {
+                            let _ = win.show();
+                            let _ = win.unminimize();
+                            let _ = win.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
             Ok(())
         })
         .run(tauri::generate_context!())

@@ -153,6 +153,14 @@ export function App() {
             toast('error', `Ошибка установки: ${ev.payload.message || 'unknown'}`);
           }
         });
+        const unlistenStarted = await listen<number>('game:started', () => {
+          // Launcher already hides itself from Rust side — JS just shows a final toast.
+          toast('info', 'Игра запущена. Лаунчер свёрнут в трей.');
+        });
+        const unlistenExited = await listen<number>('game:exited', () => {
+          toast('info', 'Игра закрыта. Лаунчер восстановлен.');
+        });
+        const _unused = [unlistenStarted, unlistenExited];
       } catch {}
     })();
     return () => { unlistenProgress?.(); };
@@ -244,9 +252,9 @@ export function App() {
       return;
     }
     try {
+      toast('info', `Запускаем Alfa MP → ${s.endpoint}. Лаунчер свернётся в трей пока ты играешь.`);
       await tauriInvoke('launch_client', { endpoint: s.endpoint });
       recordHistory(s);
-      toast('success', `Запускаем Alfa MP → ${s.endpoint}`);
     } catch (e: any) {
       toast('error', `Не удалось запустить клиент: ${e?.toString() || e}`);
     }
@@ -255,8 +263,8 @@ export function App() {
   const launchOffline = async () => {
     if (!clientState?.installed) { toast('error', 'Клиент не установлен.'); return; }
     try {
+      toast('info', 'Запускаем Alfa MP… лаунчер свернётся в трей.');
       await tauriInvoke('launch_client', { endpoint: null });
-      toast('info', 'Запускаем Alfa MP…');
     } catch (e: any) {
       toast('error', `Не удалось запустить: ${e}`);
     }
@@ -489,7 +497,7 @@ export function App() {
             <div className="kv"><span>URL</span><code>{MASTER_URL}</code></div>
             <div className="kv"><span>Статус</span><b>{error ? `ошибка: ${error}` : 'онлайн'}</b></div>
             <h3>О программе</h3>
-            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.6</b></div>
+            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.7</b></div>
             <div className="overlay-actions">
               <button className="big-btn ghost" onClick={() => openUrl(RELEASES_URL)}>Все релизы на GitHub</button>
             </div>

@@ -14,6 +14,8 @@
     "core:window:allow-show",
     "core:window:allow-hide",
     "core:window:allow-set-focus",
+    "core:window:allow-unminimize",
+    "core:tray:default",
     "shell:allow-open",
     "dialog:default",
     "http:default",

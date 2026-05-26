@@ -1,6 +1,6 @@
 [package]
 name = "alfamp-launcher"
-version = "0.1.6"
+version = "0.1.7"
 description = "Alfa MP launcher"
 authors = ["Alfa MP team"]
 edition = "2021"
@@ -14,7 +14,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-http = "2"
 tauri-plugin-shell = "2"
