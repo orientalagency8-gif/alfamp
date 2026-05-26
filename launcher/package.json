@@ -1,6 +1,6 @@
 {
   "name": "alfamp-launcher",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Alfa MP launcher — game browser + auto-installer for the Alfa MP client",
   "private": true,
   "type": "module",
