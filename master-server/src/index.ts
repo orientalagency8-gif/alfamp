@@ -33,6 +33,10 @@ const app = Fastify({
 
 await app.register(helmet, { contentSecurityPolicy: false });
 await app.register(cors, { origin: true });
+// Parse application/x-www-form-urlencoded bodies (the HTML <form> in /admin/login sends this).
+// Fastify only parses JSON by default; without this plugin POSTs from forms return HTTP 415.
+const formbody = await import('@fastify/formbody');
+await app.register(formbody.default);
 await app.register(rateLimit, {
   global: true,
   max: 300,
