@@ -46,15 +46,13 @@
     "longDescription": "Alfa MP — open multiplayer platform for Grand Theft Auto V. Browse community servers, auto-update the game client, and play with friends.",
     "windows": {
       "wix": {
-        "language": ["en-US", "ru-RU"],
-        "upgradeCode": "B7D3F1A8-2E5C-4F9A-AAAA-000000000001"
+        "language": ["en-US", "ru-RU"]
       },
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "installMode": "perMachine",
         "displayLanguageSelector": true,
-        "languages": ["English", "Russian"],
-        "compressionLevel": "best"
+        "languages": ["English", "Russian"]
       }
     }
   },
