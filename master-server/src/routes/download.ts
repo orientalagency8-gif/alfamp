@@ -29,7 +29,9 @@ async function fetchLatest(): Promise<GhRelease | null> {
   const tok = process.env.GITHUB_TOKEN;
   if (tok) headers['Authorization'] = `Bearer ${tok}`;
   try {
-    const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
+    // Use /releases?per_page=1 instead of /releases/latest — the latter skips pre-releases,
+    // and our pre-alpha launcher v0.1.0 is marked prerelease: true.
+    const r = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=1`, {
       headers,
       signal: AbortSignal.timeout(8000),
     });
@@ -38,7 +40,12 @@ async function fetchLatest(): Promise<GhRelease | null> {
       cache = { fetchedAt: Date.now(), data: null };
       return null;
     }
-    const d = (await r.json()) as GhRelease;
+    const arr = (await r.json()) as GhRelease[];
+    if (!Array.isArray(arr) || arr.length === 0) {
+      cache = { fetchedAt: Date.now(), data: null };
+      return null;
+    }
+    const d = arr[0];
     cache = { fetchedAt: Date.now(), data: d };
     return d;
   } catch (e) {
