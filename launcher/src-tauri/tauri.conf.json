@@ -1,0 +1,71 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Alfa MP",
+  "version": "0.1.0",
+  "identifier": "gg.alfamp.launcher",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Alfa MP",
+        "width": 1280,
+        "height": 720,
+        "minWidth": 980,
+        "minHeight": 600,
+        "decorations": false,
+        "transparent": false,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "backgroundColor": "#0e0e12"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: https:; connect-src 'self' https://api.alfamp.gg https://*.alfamp.gg http://104.194.140.221 ws://104.194.140.221"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "Alfa MP",
+    "copyright": "© 2026 Alfa MP",
+    "category": "Game",
+    "shortDescription": "Multiplayer launcher for GTA V",
+    "longDescription": "Alfa MP — open multiplayer platform for Grand Theft Auto V. Browse community servers, auto-update the game client, and play with friends.",
+    "windows": {
+      "wix": {
+        "language": ["en-US", "ru-RU"],
+        "upgradeCode": "B7D3F1A8-2E5C-4F9A-AAAA-000000000001"
+      },
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "perMachine",
+        "displayLanguageSelector": true,
+        "languages": ["English", "Russian"],
+        "compressionLevel": "best"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": false,
+      "endpoints": [
+        "https://api.alfamp.gg/launcher/update/{{target}}/{{current_version}}"
+      ],
+      "dialog": false,
+      "pubkey": ""
+    }
+  }
+}
