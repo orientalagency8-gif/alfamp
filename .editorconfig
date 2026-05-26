@@ -1,0 +1,32 @@
+# EditorConfig — keeps formatting consistent across editors / OSes / contributors.
+# https://editorconfig.org
+
+root = true
+
+[*]
+charset                  = utf-8
+end_of_line              = lf
+insert_final_newline     = true
+trim_trailing_whitespace = true
+indent_style             = space
+indent_size              = 2
+
+# Native Windows things that need CRLF
+[*.{cmd,bat,ps1,psm1}]
+end_of_line = crlf
+
+# Wider indent for languages where it's idiomatic
+[*.{py,go,rs}]
+indent_size = 4
+
+[*.{cs,csproj,xml,xaml,yml,yaml}]
+indent_size = 4
+
+# Don't touch lockfiles, snapshots, certificates, binary-ish formats
+[{package-lock.json,yarn.lock,Cargo.lock,*.snap,*.pem,*.crt,*.ico,*.png,*.jpg,*.webp,*.woff,*.woff2,*.icns,*.dll,*.exe,*.so,*.tar.xz}]
+trim_trailing_whitespace = false
+insert_final_newline     = false
+
+# Markdown allows trailing whitespace (for line breaks)
+[*.md]
+trim_trailing_whitespace = false
