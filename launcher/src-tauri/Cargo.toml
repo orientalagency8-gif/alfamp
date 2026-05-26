@@ -1,6 +1,6 @@
 [package]
 name = "alfamp-launcher"
-version = "0.1.0"
+version = "0.1.5"
 description = "Alfa MP launcher"
 authors = ["Alfa MP team"]
 edition = "2021"
@@ -21,6 +21,15 @@ tauri-plugin-shell = "2"
 tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["stream", "rustls-tls"] }
+futures-util = "0.3"
+tokio = { version = "1", features = ["fs", "io-util", "macros"] }
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
+dirs = "5"
+anyhow = "1"
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
 
 [profile.release]
 panic = "abort"
