@@ -128,8 +128,9 @@ export function App() {
     if (!s.endpoint) return;
     const uri = `fivem://connect/${s.endpoint}`;
     try {
-      const { openUrl } = await import('@tauri-apps/plugin-shell');
-      await openUrl(uri);
+      const shell = await import('@tauri-apps/plugin-shell');
+      // Tauri 2.x shell plugin export: `open(path)` for URIs and files
+      await (shell as any).open(uri);
     } catch {
       // Browser-dev fallback
       window.location.href = uri;
