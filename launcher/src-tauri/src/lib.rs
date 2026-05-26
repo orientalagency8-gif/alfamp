@@ -166,6 +166,12 @@ async fn launch_client(app: AppHandle, state: tauri::State<'_, AppState>, endpoi
 
     let mut cmd = std::process::Command::new(&exe);
     cmd.current_dir(&install_dir);
+
+    // CRITICAL: -noupdater prevents CFX from phoning home to content.cfx.re
+    // and overwriting our rebranded AlfaMP.exe with the official FiveM binary.
+    // Without this, every launch silently replaces our binary.
+    cmd.arg("-noupdater");
+
     if let Some(ep) = endpoint.filter(|s| !s.is_empty()) {
         cmd.arg("+connect").arg(ep);
     }
