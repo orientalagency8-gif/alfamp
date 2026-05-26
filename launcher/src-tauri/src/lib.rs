@@ -87,6 +87,28 @@ fn wipe_client() -> Result<(), String> {
         std::thread::sleep(std::time::Duration::from_millis(500));
     }
 
+    // PRESERVE user data — Rockstar Social Club ticket, cached server resources,
+    // user prefs, profiles. Without this, every wipe makes user re-login to RGSC.
+    // We back up these dirs, wipe the rest, restore them.
+    let backup_dir = client::install_dir().parent()
+        .map(|p| p.join("_data_backup"))
+        .unwrap_or_else(|| std::path::PathBuf::from(std::env::temp_dir()).join("alfamp-data-backup"));
+    let install_dir = client::install_dir();
+    let preserve_subdirs = ["data", "logs", "crashes"];
+    let _ = std::fs::remove_dir_all(&backup_dir);
+    let _ = std::fs::create_dir_all(&backup_dir);
+    for sub in &preserve_subdirs {
+        let src = install_dir.join(sub);
+        if src.exists() {
+            let dst = backup_dir.join(sub);
+            // best-effort move (avoid copy when possible)
+            let _ = std::fs::rename(&src, &dst).or_else(|_| {
+                // fallback: recursive copy
+                copy_dir_recursive(&src, &dst).map(|_| ())
+            });
+        }
+    }
+
     let dir = client::install_dir();
     if dir.exists() {
         match std::fs::remove_dir_all(&dir) {
@@ -114,6 +136,34 @@ fn wipe_client() -> Result<(), String> {
         }
     }
     std::fs::create_dir_all(&dir).map_err(|e| format!("recreate failed: {}", e))?;
+
+    // Restore preserved subdirs back into the install dir
+    for sub in &preserve_subdirs {
+        let src = backup_dir.join(sub);
+        if src.exists() {
+            let dst = dir.join(sub);
+            let _ = std::fs::rename(&src, &dst).or_else(|_| {
+                copy_dir_recursive(&src, &dst).map(|_| ())
+            });
+        }
+    }
+    let _ = std::fs::remove_dir_all(&backup_dir);
+
+    Ok(())
+}
+
+fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let path = entry.path();
+        let dest_path = dst.join(entry.file_name());
+        if path.is_dir() {
+            copy_dir_recursive(&path, &dest_path)?;
+        } else {
+            std::fs::copy(&path, &dest_path)?;
+        }
+    }
     Ok(())
 }
 
