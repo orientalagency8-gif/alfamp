@@ -27,8 +27,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: launcher/package-lock.json
+        # No cache: we don't ship a package-lock.json yet (it'll be generated on
+        # first `npm install` here and can be committed later for faster builds).
 
       - name: Setup Rust (stable, MSVC)
         uses: dtolnay/rust-toolchain@stable
