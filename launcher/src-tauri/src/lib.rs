@@ -39,10 +39,23 @@ fn gta_detect() -> Option<String> {
 fn client_state() -> ClientState {
     let install_dir = client::install_dir();
     let client_path = install_dir.join("AlfaMP.exe");
-    let installed = client_path.exists();
     let version = std::fs::read_to_string(install_dir.join("version.txt"))
         .ok()
         .map(|s| s.trim().to_string());
+
+    // Stub detection — early versions shipped a 200KB placeholder AlfaMP.exe.
+    // Treat the install as "not installed" if either:
+    //   • the exe is suspiciously small (<2 MB)  — real CFX client is 5+ MB
+    //   • or version.txt explicitly marks it as a stub
+    let real_size_ok = std::fs::metadata(&client_path)
+        .map(|m| m.len() >= 2 * 1024 * 1024)
+        .unwrap_or(false);
+    let not_stub_version = !version
+        .as_deref()
+        .map(|v| v.contains("stub") || v.contains("placeholder"))
+        .unwrap_or(false);
+    let installed = client_path.exists() && real_size_ok && not_stub_version;
+
     let gta_path = gta::detect_gta_path();
     ClientState {
         installed,
@@ -51,6 +64,17 @@ fn client_state() -> ClientState {
         version,
         gta_path,
     }
+}
+
+#[tauri::command]
+fn wipe_client() -> Result<(), String> {
+    // Force-remove the install dir so the launcher offers a clean install again.
+    let dir = client::install_dir();
+    if dir.exists() {
+        std::fs::remove_dir_all(&dir).map_err(|e| format!("wipe failed: {}", e))?;
+    }
+    std::fs::create_dir_all(&dir).map_err(|e| format!("recreate failed: {}", e))?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -141,6 +165,7 @@ pub fn run() {
             download_client,
             launch_client,
             open_url,
+            wipe_client,
         ])
         .setup(|app| {
             // Ensure the install dir exists early.

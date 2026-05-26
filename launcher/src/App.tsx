@@ -274,6 +274,20 @@ export function App() {
     }
   };
 
+  const wipeAndReinstall = async () => {
+    if (installing) return;
+    if (!confirm('Удалить локальную папку клиента и скачать заново?')) return;
+    try {
+      await tauriInvoke('wipe_client');
+      const st = await tauriInvoke<ClientState>('client_state');
+      setClientState(st);
+      toast('info', 'Локальная папка очищена. Скачиваю заново…');
+      await installClient();
+    } catch (e: any) {
+      toast('error', `Не удалось очистить: ${e}`);
+    }
+  };
+
   const reDetectGta = async () => {
     try {
       const path = await tauriInvoke<string | null>('gta_detect');
@@ -461,6 +475,9 @@ export function App() {
               <button className="big-btn primary" disabled={installing} onClick={installClient}>
                 {clientState?.installed ? 'Переустановить клиент' : 'Установить клиент'}
               </button>
+              <button className="big-btn ghost" disabled={installing} onClick={wipeAndReinstall}>
+                Удалить и скачать заново
+              </button>
             </div>
             <h3>GTA V</h3>
             <div className="kv"><span>Путь</span><code>{clientState?.gta_path || 'не найдена'}</code></div>
@@ -472,7 +489,7 @@ export function App() {
             <div className="kv"><span>URL</span><code>{MASTER_URL}</code></div>
             <div className="kv"><span>Статус</span><b>{error ? `ошибка: ${error}` : 'онлайн'}</b></div>
             <h3>О программе</h3>
-            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.5</b></div>
+            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.6</b></div>
             <div className="overlay-actions">
               <button className="big-btn ghost" onClick={() => openUrl(RELEASES_URL)}>Все релизы на GitHub</button>
             </div>
