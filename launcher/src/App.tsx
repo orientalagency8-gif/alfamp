@@ -10,23 +10,16 @@ type Server = {
   players: number;
   maxPlayers: number;
   ping: number;          // ms
+  endpoint?: string;     // e.g. "104.194.140.221:30120" — used by Connect
 };
 
 type Tab = 'gta5' | 'rdr2' | 'favorites' | 'history';
 
-// ── Mocked data (until master-server /v1/servers returns real shape) ──
-const MOCK: Server[] = [
-  { id: '1',  name: 'GTA5RP.COM | Redwood | gta5rp.com/discord',  country: 'ru', featured: true, tags: ['ROLEPLAY','VOICE','11','LOCKED'], gamemode: 'roleplay', players: 1869, maxPlayers: 2000, ping: 28 },
-  { id: '2',  name: 'GTA5RP.COM | Murrieta | gta5rp.com/discord', country: 'ru', featured: true, tags: ['ROLEPLAY','VOICE','11','LOCKED'], gamemode: 'roleplay', players: 1731, maxPlayers: 2000, ping: 31 },
-  { id: '3',  name: 'GTA5RP.COM | Eclipse | gta5rp.com/discord',  country: 'ru', featured: true, tags: ['ROLEPLAY','VOICE','11','LOCKED'], gamemode: 'roleplay', players: 1298, maxPlayers: 1500, ping: 35 },
-  { id: '4',  name: 'GTA5RP.COM | La Puerta | gta5rp.com/discord', country: 'ru', featured: true, tags: ['ROLEPLAY','VOICE','11','LOCKED'], gamemode: 'roleplay', players: 1262, maxPlayers: 1500, ping: 29 },
-  { id: '5',  name: 'GTA5RP.COM | Rockford | gta5rp.com/discord', country: 'ru', featured: true, tags: ['ROLEPLAY','VOICE','11','LOCKED'], gamemode: 'roleplay', players: 1038, maxPlayers: 1500, ping: 42 },
-  { id: '6',  name: 'RMRP - Криминальная Москва | Арбат',          country: 'ru', featured: true, tags: ['VOICE','11','LOCKED'],          gamemode: 'roleplay', players: 910, maxPlayers: 1000, ping: 55 },
-  { id: '7',  name: 'GTA5RP.COM | Burton | gta5rp.com/discord',   country: 'ru', featured: true, tags: ['ROLEPLAY','VOICE','11','LOCKED'], gamemode: 'roleplay', players: 876, maxPlayers: 1500, ping: 38 },
-  { id: '8',  name: 'GTA5RP.COM | Senora | gta5rp.com/discord',   country: 'ru', featured: true, tags: ['ROLEPLAY','VOICE','11','LOCKED'], gamemode: 'roleplay', players: 863, maxPlayers: 1500, ping: 33 },
-  { id: '9',  name: 'GTA5RP.COM | Grapeseed | gta5rp.com/discord', country: 'ru', featured: true, tags: ['ROLEPLAY','VOICE','11','LOCKED'], gamemode: 'roleplay', players: 752, maxPlayers: 1500, ping: 36 },
-  { id: '10', name: 'OGland Romania - Roleplay Server',            country: 'ro', tags: ['ROLEPLAY','VOICE','11','LOCKED'],          gamemode: 'roleplay', players: 746, maxPlayers: 1000, ping: 88 },
-];
+// Master-server. Compiled into the bundle; override at build time with VITE_MASTER_URL.
+const MASTER_URL = (import.meta as any).env?.VITE_MASTER_URL || 'http://104.194.140.221:8080';
+
+// Fallback shown if master is unreachable on first paint.
+const EMPTY_FALLBACK: Server[] = [];
 
 function FlagEmoji({ country }: { country: string }) {
   // Unicode regional indicator letters (e.g. "ru" → 🇷🇺) — works on Windows 10/11
@@ -72,7 +65,44 @@ function AlfaLogo() {
 export function App() {
   const [tab, setTab] = useState<Tab>('gta5');
   const [search, setSearch] = useState('');
-  const [servers] = useState<Server[]>(MOCK);
+  const [servers, setServers] = useState<Server[]>(EMPTY_FALLBACK);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Poll master-server every 30s
+  useEffect(() => {
+    let cancelled = false;
+    const fetchOnce = async () => {
+      try {
+        const r = await fetch(`${MASTER_URL}/v1/servers`, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        // Tolerate either { servers: [...] } or [...] response shape
+        const list: any[] = Array.isArray(data) ? data : (data.servers || data.data || []);
+        if (cancelled) return;
+        setServers(list.map((s: any, i: number) => ({
+          id: String(s.id ?? s.endpoint ?? i),
+          name: s.name || s.hostname || 'Unnamed',
+          country: (s.country || 'us').toLowerCase().slice(0, 2),
+          featured: !!s.featured,
+          tags: (s.tags || []) as string[],
+          gamemode: (s.gamemode || s.gametype || '').toString().toLowerCase(),
+          players: Number(s.players ?? s.clients ?? 0),
+          maxPlayers: Number(s.maxPlayers ?? s.max_clients ?? s.svMaxclients ?? 32),
+          ping: Number(s.ping ?? 0),
+          endpoint: s.endpoint || s.connectEndPoint || (s.host && s.port ? `${s.host}:${s.port}` : undefined),
+        })));
+        setError(null);
+      } catch (e: any) {
+        if (!cancelled) setError(e.message || 'master unreachable');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchOnce();
+    const t = setInterval(fetchOnce, 30_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
 
   const filtered = useMemo(() =>
     servers.filter(s => s.name.toLowerCase().includes(search.toLowerCase())),
@@ -91,6 +121,19 @@ export function App() {
       else if (action === 'toggleMaximize') win.toggleMaximize();
       else win.close();
     } catch { /* not running under Tauri */ }
+  };
+
+  // Connect: open fivem:// URI so the OS hands off to FiveM (or our launcher protocol later)
+  const connect = async (s: Server) => {
+    if (!s.endpoint) return;
+    const uri = `fivem://connect/${s.endpoint}`;
+    try {
+      const { openUrl } = await import('@tauri-apps/plugin-shell');
+      await openUrl(uri);
+    } catch {
+      // Browser-dev fallback
+      window.location.href = uri;
+    }
   };
 
   return (
@@ -142,8 +185,23 @@ export function App() {
 
       {/* Server list */}
       <div className="server-list">
+        {loading && servers.length === 0 && (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-2)' }}>
+            Загружаем список серверов…
+          </div>
+        )}
+        {error && servers.length === 0 && (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-2)' }}>
+            Не удалось связаться с master-сервером: {error}
+          </div>
+        )}
+        {!loading && servers.length === 0 && !error && (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-2)' }}>
+            Пока нет зарегистрированных серверов.
+          </div>
+        )}
         {filtered.map(s => (
-          <div key={s.id} className="server-row">
+          <div key={s.id} className="server-row" onDoubleClick={() => connect(s)} title={s.endpoint ? `Двойной клик — подключиться к ${s.endpoint}` : 'У сервера нет публичного endpoint'}>
             <div className="server-name">
               <FlagEmoji country={s.country} />
               {s.featured && <svg className="star" viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>}
@@ -156,7 +214,7 @@ export function App() {
               </div>
             </div>
             <div className="gamemode">{s.gamemode}</div>
-            <div className="players">{formatNum(s.players)}</div>
+            <div className="players">{formatNum(s.players)}{s.maxPlayers ? ` / ${formatNum(s.maxPlayers)}` : ''}</div>
             <div className="ping"><PingBars ms={s.ping} /></div>
           </div>
         ))}

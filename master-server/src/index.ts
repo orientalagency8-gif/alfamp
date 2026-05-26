@@ -12,6 +12,7 @@ import { serversRoutes } from './routes/servers.ts';
 import { authRoutes } from './routes/auth.ts';
 import { meRoutes } from './routes/me.ts';
 import { legalRoutes } from './routes/legal.ts';
+import { downloadRoutes } from './routes/download.ts';
 import authGuard from './auth/guard.ts';
 import { loadJwtSecret } from './auth/tokens.ts';
 
@@ -54,6 +55,7 @@ await app.register(serversRoutes);
 await app.register(authRoutes);
 await app.register(meRoutes);
 await app.register(legalRoutes);
+await app.register(downloadRoutes);
 
 // --- Migrations + seed ------------------------------------------------------
 
