@@ -29,8 +29,8 @@ type Progress = {
   message: string | null;
 };
 
-const MASTER_URL = (import.meta as any).env?.VITE_MASTER_URL || 'http://104.194.140.221:8080';
-const CLIENT_BUNDLE_URL = `${MASTER_URL.replace(':8080', '')}/static/AlfaMP-client-bundle.zip`;
+const MASTER_URL = (import.meta as any).env?.VITE_MASTER_URL || 'http://104.194.140.221';
+const CLIENT_BUNDLE_URL = `${MASTER_URL}/static/AlfaMP-client-bundle.zip`;
 const RELEASES_URL = 'https://github.com/Mr-Banana-Web3/alfamp/releases';
 
 const LS_FAVORITES = 'alfamp.favorites.v1';
@@ -526,7 +526,7 @@ export function App() {
             <div className="kv"><span>URL</span><code>{MASTER_URL}</code></div>
             <div className="kv"><span>Статус</span><b>{error ? `ошибка: ${error}` : 'онлайн'}</b></div>
             <h3>О программе</h3>
-            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.9</b></div>
+            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.10</b></div>
             <div className="overlay-actions">
               <button className="big-btn ghost" onClick={() => openUrl(RELEASES_URL)}>Все релизы на GitHub</button>
             </div>
