@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Library</OutputType>
+    <AssemblyName>HelloWorld</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- This is the ONLY change a RAGE-MP resource needs at the .csproj level. -->
+    <ProjectReference Include="..\..\AlfaMP.RageMP.Compat.csproj" />
+  </ItemGroup>
+</Project>
