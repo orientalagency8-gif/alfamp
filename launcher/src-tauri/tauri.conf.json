@@ -12,6 +12,22 @@
   "app": {
     "windows": [
       {
+        "label": "splash",
+        "url": "splash.html",
+        "title": "Alfa MP — Loading",
+        "width": 520,
+        "height": 320,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "center": true,
+        "skipTaskbar": false,
+        "shadow": false
+      },
+      {
+        "label": "main",
+        "url": "index.html",
         "title": "Alfa MP",
         "width": 1280,
         "height": 720,
@@ -22,7 +38,8 @@
         "resizable": true,
         "fullscreen": false,
         "center": true,
-        "backgroundColor": "#0e0e12"
+        "backgroundColor": "#0e0e12",
+        "visible": false
       }
     ],
     "security": {

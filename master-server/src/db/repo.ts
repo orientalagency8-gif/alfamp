@@ -190,6 +190,34 @@ export async function verifyServer(id: string, verified: boolean): Promise<boole
   return (r.rowCount ?? 0) > 0;
 }
 
+// ============ Admin operations ============
+
+/** All servers regardless of liveness — for /admin dashboard. */
+export async function listAllServers(): Promise<(Server & { ban_reason?: string | null })[]> {
+  const r = await pool.query<Server & { ban_reason?: string | null }>(
+    `SELECT * FROM servers ORDER BY last_heartbeat DESC NULLS LAST`
+  );
+  return r.rows;
+}
+
+/** Hard delete a server by id. */
+export async function deleteServer(id: string): Promise<boolean> {
+  const r = await pool.query(`DELETE FROM servers WHERE id = $1`, [id]);
+  return (r.rowCount ?? 0) > 0;
+}
+
+/** Insert an api_key if missing — used by /admin when adding a server in one click. */
+export async function ensureApiKey(key: string, label: string): Promise<void> {
+  // We don't have a real owner_id here (admin acts as system); use a sentinel ownerless row.
+  // ON CONFLICT DO NOTHING — idempotent.
+  await pool.query(
+    `INSERT INTO api_keys(key, owner_id, label)
+     VALUES ($1, '00000000-0000-0000-0000-000000000000', $2)
+     ON CONFLICT (key) DO NOTHING`,
+    [key, label]
+  );
+}
+
 export async function pruneDeadServers(thresholdSec = 120): Promise<number> {
   // Удаляем только не-demo и не имеющие активного владельца недавно
   const r = await pool.query(

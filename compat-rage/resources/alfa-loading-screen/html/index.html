@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Alfa MP — Connecting</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="gradient"></div>
+
+  <div class="centerpane">
+    <svg class="logo" viewBox="0 0 24 24">
+      <path d="M12 2 L22 22 H17 L15 18 H9 L7 22 H2 Z M10 14 H14 L12 8 Z"/>
+    </svg>
+    <h1 id="serverName">Connecting to server…</h1>
+    <p id="tagline">Loading resources</p>
+
+    <div class="progress">
+      <div class="bar" id="bar"></div>
+    </div>
+    <div class="meta">
+      <span id="phase">Initializing</span>
+      <span id="counter">0 / 0</span>
+    </div>
+
+    <ul class="resourceList" id="resources"></ul>
+  </div>
+
+  <div class="footer">
+    <span class="brand">Alfa MP</span>
+    <span class="tip" id="tip">Tip: Press F8 to open the developer console</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

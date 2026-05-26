@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Alfa MP — Loading</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: transparent; overflow: hidden;
+                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                 -webkit-font-smoothing: antialiased; user-select: none; }
+
+    .splash {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse 70% 50% at 50% 30%, rgba(214,58,81,0.20), transparent 65%),
+                  linear-gradient(180deg, #1a1a26 0%, #0e0e16 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(214,58,81,0.25);
+      box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.03) inset;
+      -webkit-app-region: drag;
+    }
+
+    /* Logo animation */
+    .logo {
+      width: 84px; height: 84px; margin-bottom: 20px;
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    .logo path {
+      fill: #d63a51;
+      filter: drop-shadow(0 0 16px rgba(214,58,81,.55));
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(1.06); opacity: .85; }
+    }
+
+    .brand {
+      font-size: 26px; font-weight: 700; letter-spacing: -.02em; color: #fff;
+      margin-bottom: 6px;
+    }
+    .tagline {
+      font-size: 12px; color: #8b8b9a; margin-bottom: 32px;
+      text-transform: uppercase; letter-spacing: .15em;
+    }
+
+    /* Progress bar */
+    .bar {
+      width: 320px; height: 4px;
+      background: rgba(255,255,255,.06);
+      border-radius: 2px; overflow: hidden;
+      position: relative;
+    }
+    .bar::before {
+      content: ''; position: absolute; top: 0; left: -40%;
+      width: 40%; height: 100%;
+      background: linear-gradient(90deg, transparent, #d63a51, #ff5c75, transparent);
+      animation: slide 1.4s ease-in-out infinite;
+    }
+    @keyframes slide {
+      0%   { left: -40%; }
+      100% { left: 100%; }
+    }
+
+    .status {
+      margin-top: 16px;
+      font-size: 11px; color: #6c6c7c;
+      font-family: 'JetBrains Mono', 'Consolas', monospace;
+      letter-spacing: .04em;
+      min-height: 16px;
+    }
+
+    .version {
+      position: absolute; bottom: 12px; right: 16px;
+      font-size: 10px; color: #4a4a5a;
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="splash">
+    <svg class="logo" viewBox="0 0 24 24">
+      <path d="M12 2 L22 22 H17 L15 18 H9 L7 22 H2 Z M10 14 H14 L12 8 Z"/>
+    </svg>
+    <div class="brand">Alfa MP</div>
+    <div class="tagline">Loading</div>
+    <div class="bar"></div>
+    <div class="status" id="status">Connecting to master…</div>
+    <div class="version" id="version">v0.1.0</div>
+  </div>
+  <script>
+    const stages = [
+      'Connecting to master…',
+      'Verifying version…',
+      'Fetching server list…',
+      'Preparing launcher…',
+    ];
+    let i = 0;
+    const el = document.getElementById('status');
+    setInterval(() => { i = (i + 1) % stages.length; el.textContent = stages[i]; }, 800);
+
+    // After 2.5 s, ask Rust side to switch to main window.
+    setTimeout(async () => {
+      try {
+        const { invoke } = window.__TAURI__.core;
+        await invoke('finish_splash');
+      } catch (e) {
+        console.warn('finish_splash:', e);
+      }
+    }, 2500);
+  </script>
+</body>
+</html>
