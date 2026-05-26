@@ -1,0 +1,214 @@
+diff --git a/code/client/diag/diagutil.rc b/code/client/diag/diagutil.rc
+index 0fcd876..058026e 100644
+--- a/code/client/diag/diagutil.rc
++++ b/code/client/diag/diagutil.rc
+@@ -37,10 +37,10 @@ BEGIN
+         BLOCK "040904b0"
+         BEGIN
+             VALUE "CompanyName", "cfx-collective"
+-			VALUE "FileDescription", "FiveM Diagnostics Utility"
++			VALUE "FileDescription", "Alfa MP Diagnostics Utility"
+             VALUE "FileVersion", "1.1.0.0"
+             VALUE "InternalName", "Citizen"
+-            VALUE "LegalCopyright", "(C) 2019- CitizenFX"
++            VALUE "LegalCopyright", "(C) 2026 Alfa MP"
+             VALUE "OriginalFilename", "citizenmp.exe"
+             VALUE "ProductName", "Citizen"
+             VALUE "ProductVersion", "1.0.0.0"
+diff --git a/code/client/launcher/Bootstrap.cpp b/code/client/launcher/Bootstrap.cpp
+index 007cab1..41f4e04 100644
+--- a/code/client/launcher/Bootstrap.cpp
++++ b/code/client/launcher/Bootstrap.cpp
+@@ -152,7 +152,7 @@ bool Bootstrap_DoBootstrap()
+ 	{
+ 		if (GetFileAttributes(MakeRelativeCitPath(L"GTA5.exe").c_str()) != INVALID_FILE_ATTRIBUTES || GetFileAttributes(MakeRelativeCitPath(L"..\\GTA5.exe").c_str()) != INVALID_FILE_ATTRIBUTES)
+ 		{
+-			MessageBox(NULL, L"Please do not place FiveM.exe in your game folder. Make a new empty folder (for example, on your desktop) instead.", L"O\x448\x438\x431\x43A\x430", MB_OK | MB_ICONSTOP);
++			MessageBox(NULL, L"Please do not place AlfaMP.exe in your game folder. Make a new empty folder (for example, on your desktop) instead.", L"O\x448\x438\x431\x43A\x430", MB_OK | MB_ICONSTOP);
+ 			return false;
+ 		}
+ 	}
+diff --git a/code/client/launcher/Installer.cpp b/code/client/launcher/Installer.cpp
+index 907f5b0..c3971ad 100644
+--- a/code/client/launcher/Installer.cpp
++++ b/code/client/launcher/Installer.cpp
+@@ -65,7 +65,7 @@ static std::wstring GetRootPath()
+ 	if (!appDataPath.empty())
+ 	{
+ #ifdef GTA_FIVE
+-		appDataPath += L"\\FiveM";
++		appDataPath += L"\\AlfaMP";
+ #elif defined(IS_RDR3)
+ 		appDataPath += L"\\RedM";
+ #else
+diff --git a/code/client/launcher/LauncherConfig.h b/code/client/launcher/LauncherConfig.h
+index ff94182..c0fdf51 100644
+--- a/code/client/launcher/LauncherConfig.h
++++ b/code/client/launcher/LauncherConfig.h
+@@ -24,7 +24,7 @@
+ #define GAME_EXECUTABLE L"MaxPayne3.exe"
+ #elif defined(GTA_FIVE)
+ #define PRODUCT_ID CfxState::ProductID::FIVEM
+-#define PRODUCT_NAME L"FiveM"
++#define PRODUCT_NAME L"Alfa MP"
+ #define GAME_EXECUTABLE L"GTA5.exe"
+ #define CONTENT_NAME "fivereborn"
+ #define LINK_PROTOCOL L"fivem"
+diff --git a/code/client/launcher/MiniDump.cpp b/code/client/launcher/MiniDump.cpp
+index 76de5af..7cde4e8 100644
+--- a/code/client/launcher/MiniDump.cpp
++++ b/code/client/launcher/MiniDump.cpp
+@@ -451,7 +451,7 @@ static void OverloadCrashData(TASKDIALOGCONFIG* config)
+ 	if (blame)
+ 	{
+ 		static std::wstring errTitle = fmt::sprintf(L"%s encountered an error", blame);
+-		static std::wstring errDescription = fmt::sprintf(L"FiveM crashed due to %s.\n%s", blame, blame_two);
++		static std::wstring errDescription = fmt::sprintf(L"Alfa MP crashed due to %s.\n%s", blame, blame_two);
+ 
+ 		config->pszMainInstruction = errTitle.c_str();
+ 		config->pszContent = errDescription.c_str();
+@@ -1376,7 +1376,7 @@ void InitializeDumpServer(int inheritedHandle, int parentPid)
+ 
+ 						if (!cd.empty())
+ 						{
+-							mainInstruction = gettext(L"FiveM crashed... but we're on it!");
++							mainInstruction = gettext(L"Alfa MP crashed... but we're on it!");
+ 							cd += "\n\n";
+ 						}
+ 
+diff --git a/code/client/launcher/launcher.manifest b/code/client/launcher/launcher.manifest
+index 88dcd72..afb3c32 100644
+--- a/code/client/launcher/launcher.manifest
++++ b/code/client/launcher/launcher.manifest
+@@ -36,6 +36,6 @@
+ 	</dependency>
+ 	<assemblyIdentity
+ 		type="win32"
+-		name="FiveM"
++		name="AlfaMP"
+ 		version="1.0.0.0" />
+ </assembly>
+diff --git a/code/client/launcher/launcher.rc b/code/client/launcher/launcher.rc
+index 4765edf..4120bf2 100644
+--- a/code/client/launcher/launcher.rc
++++ b/code/client/launcher/launcher.rc
+@@ -50,7 +50,7 @@ IDM_BACKDROP			MEOW "backdrop_rdr.png"
+ STRINGTABLE
+ BEGIN
+ #if defined(GTA_FIVE)
+-	IDS_FOLDER_NAME, L"FiveM Application Data"
++	IDS_FOLDER_NAME, L"Alfa MP Application Data"
+ #elif defined(IS_RDR3)
+ 	IDS_FOLDER_NAME, L"RedM Application Data"
+ #else
+@@ -74,7 +74,7 @@ END
+ #endif
+ 
+ #if defined(GTA_FIVE)
+-#define PRODUCT "FiveM"
++#define PRODUCT "Alfa MP"
+ #elif defined(IS_RDR3)
+ #define PRODUCT "RedM"
+ #elif defined(GTA_NY)
+@@ -107,8 +107,8 @@ BEGIN
+ 			VALUE "FileDescription", PRODUCT SUFFIX
+             VALUE "InternalName", PRODUCT
+             VALUE "FileVersion", "2.0.0." STR(EXE_VERSION)
+-            VALUE "LegalCopyright", "(C) 2015-2022 Cfx.re"
+-            VALUE "OriginalFilename", "CitizenMP.exe"
++            VALUE "LegalCopyright", "(C) 2026 Alfa MP"
++            VALUE "OriginalFilename", "AlfaMP.exe"
+             VALUE "ProductName", PRODUCT
+             VALUE "ProductVersion", "2.0.0." STR(EXE_VERSION)
+         END
+diff --git a/code/client/launcher/premake5.lua b/code/client/launcher/premake5.lua
+index d8b37a0..64178e2 100644
+--- a/code/client/launcher/premake5.lua
++++ b/code/client/launcher/premake5.lua
+@@ -216,7 +216,7 @@ local function launcherpersonality_inner(name)
+ 			targetname "CitizenPayne"
+ 
+ 		filter { "options:game=five" }
+-			targetname "FiveM"
++			targetname "AlfaMP"
+ 			
+ 		filter { "options:game=launcher" }
+ 			targetname "CfxLauncher"
+diff --git a/code/components/citizen-scripting-mono/include/MonoComponentHostShared.h b/code/components/citizen-scripting-mono/include/MonoComponentHostShared.h
+index 730629c..e3a2339 100644
+--- a/code/components/citizen-scripting-mono/include/MonoComponentHostShared.h
++++ b/code/components/citizen-scripting-mono/include/MonoComponentHostShared.h
+@@ -19,7 +19,7 @@
+ #ifdef IS_FXSERVER
+ #define PRODUCT_NAME "Server"
+ #elif defined(GTA_FIVE)
+-#define PRODUCT_NAME "FiveM"
++#define PRODUCT_NAME "Alfa MP"
+ #elif defined(IS_RDR3)
+ #define PRODUCT_NAME "RedM"
+ #elif defined(GTA_NY)
+diff --git a/code/components/conhost-v2/src/UrlConfirmationModal.cpp b/code/components/conhost-v2/src/UrlConfirmationModal.cpp
+index 9a13f79..1bd66e7 100644
+--- a/code/components/conhost-v2/src/UrlConfirmationModal.cpp
++++ b/code/components/conhost-v2/src/UrlConfirmationModal.cpp
+@@ -14,7 +14,7 @@
+ #include <UrlConfirmationExport.h>
+ 
+ #if defined(GTA_FIVE)
+-#define PRODUCT_NAME "FiveM"
++#define PRODUCT_NAME "Alfa MP"
+ #elif defined(IS_RDR3)
+ #define PRODUCT_NAME "RedM"
+ #endif
+diff --git a/code/components/font-renderer/src/GtaGameInterface.cpp b/code/components/font-renderer/src/GtaGameInterface.cpp
+index 9b9a1cc..9ca084b 100644
+--- a/code/components/font-renderer/src/GtaGameInterface.cpp
++++ b/code/components/font-renderer/src/GtaGameInterface.cpp
+@@ -394,7 +394,7 @@ static InitFunction initFunction([] ()
+ 				return L"";
+ 			};
+ 
+-			brandName = L"FiveM";
++			brandName = L"Alfa MP";
+ 			brandingEmoji = getDayEmoji();
+ 
+ #if defined(IS_RDR3)
+diff --git a/code/components/gta-core-five/src/CustomText.cpp b/code/components/gta-core-five/src/CustomText.cpp
+index 9e09a04..2b50739 100644
+--- a/code/components/gta-core-five/src/CustomText.cpp
++++ b/code/components/gta-core-five/src/CustomText.cpp
+@@ -65,7 +65,7 @@ namespace game
+ static HookFunction hookFunction([] ()
+ {
+ 	g_textMap[HashString("PM_PANE_LEAVE")] = "Disconnect";
+-	g_textMap[HashString("FE_THDR_GTAO")] = "FiveM";
++	g_textMap[HashString("FE_THDR_GTAO")] = "Alfa MP";
+ 
+ 	void* getTextPtr = hook::pattern("48 8B CB 8B D0 E8 ? ? ? ? 48 85 C0 0F 95 C0").count(1).get(0).get<void>(5);
+ 	hook::set_call(&g_origGetText, getTextPtr);
+diff --git a/code/components/gta-core-five/src/GameInput.cpp b/code/components/gta-core-five/src/GameInput.cpp
+index 67d93a0..41125c6 100644
+--- a/code/components/gta-core-five/src/GameInput.cpp
++++ b/code/components/gta-core-five/src/GameInput.cpp
+@@ -1439,7 +1439,7 @@ static HookFunction hookFunction([]()
+ 		}
+ 	});
+ 
+-	game::AddCustomText("PM_PANE_CFX", "FiveM");
++	game::AddCustomText("PM_PANE_CFX", "Alfa MP");
+ 
+ 	// Snapmatic gallery error message when not logged-in to the forum / Discourse account
+ 	game::AddCustomText("SG_PH_LS_CL_FL", "To upload Snapmatic photos to the forum, please log in to your Cfx.re account in the main menu.");
+diff --git a/code/components/net/src/NetLibrary.cpp b/code/components/net/src/NetLibrary.cpp
+index 0248189..ab5fea2 100644
+--- a/code/components/net/src/NetLibrary.cpp
++++ b/code/components/net/src/NetLibrary.cpp
+@@ -43,7 +43,7 @@
+ #endif
+ 
+ #ifdef GTA_FIVE
+-#define PRODUCT_NAME "FiveM"
++#define PRODUCT_NAME "Alfa MP"
+ #elif defined(IS_RDR3)
+ #define PRODUCT_NAME "RedM"
+ #endif

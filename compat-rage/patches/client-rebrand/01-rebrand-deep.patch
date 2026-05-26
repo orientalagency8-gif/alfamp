@@ -1,0 +1,677 @@
+diff --git a/code/client/diag/diagutil.rc b/code/client/diag/diagutil.rc
+index 0fcd876..2008dc8 100644
+--- a/code/client/diag/diagutil.rc
++++ b/code/client/diag/diagutil.rc
+@@ -36,13 +36,13 @@ BEGIN
+     BEGIN
+         BLOCK "040904b0"
+         BEGIN
+-            VALUE "CompanyName", "cfx-collective"
+-			VALUE "FileDescription", "FiveM Diagnostics Utility"
++            VALUE "CompanyName", "Alfa MP"
++			VALUE "FileDescription", "Alfa MP Diagnostics Utility"
+             VALUE "FileVersion", "1.1.0.0"
+             VALUE "InternalName", "Citizen"
+-            VALUE "LegalCopyright", "(C) 2019- CitizenFX"
+-            VALUE "OriginalFilename", "citizenmp.exe"
+-            VALUE "ProductName", "Citizen"
++            VALUE "LegalCopyright", "(C) 2026 Alfa MP"
++            VALUE "OriginalFilename", "alfamp-diag.exe"
++            VALUE "ProductName", "Alfa MP"
+             VALUE "ProductVersion", "1.0.0.0"
+         END
+     END
+diff --git a/code/client/launcher/Bootstrap.cpp b/code/client/launcher/Bootstrap.cpp
+index 007cab1..41f4e04 100644
+--- a/code/client/launcher/Bootstrap.cpp
++++ b/code/client/launcher/Bootstrap.cpp
+@@ -152,7 +152,7 @@ bool Bootstrap_DoBootstrap()
+ 	{
+ 		if (GetFileAttributes(MakeRelativeCitPath(L"GTA5.exe").c_str()) != INVALID_FILE_ATTRIBUTES || GetFileAttributes(MakeRelativeCitPath(L"..\\GTA5.exe").c_str()) != INVALID_FILE_ATTRIBUTES)
+ 		{
+-			MessageBox(NULL, L"Please do not place FiveM.exe in your game folder. Make a new empty folder (for example, on your desktop) instead.", L"O\x448\x438\x431\x43A\x430", MB_OK | MB_ICONSTOP);
++			MessageBox(NULL, L"Please do not place AlfaMP.exe in your game folder. Make a new empty folder (for example, on your desktop) instead.", L"O\x448\x438\x431\x43A\x430", MB_OK | MB_ICONSTOP);
+ 			return false;
+ 		}
+ 	}
+diff --git a/code/client/launcher/Installer.cpp b/code/client/launcher/Installer.cpp
+index 907f5b0..c3971ad 100644
+--- a/code/client/launcher/Installer.cpp
++++ b/code/client/launcher/Installer.cpp
+@@ -65,7 +65,7 @@ static std::wstring GetRootPath()
+ 	if (!appDataPath.empty())
+ 	{
+ #ifdef GTA_FIVE
+-		appDataPath += L"\\FiveM";
++		appDataPath += L"\\AlfaMP";
+ #elif defined(IS_RDR3)
+ 		appDataPath += L"\\RedM";
+ #else
+diff --git a/code/client/launcher/LauncherConfig.h b/code/client/launcher/LauncherConfig.h
+index ff94182..c0fdf51 100644
+--- a/code/client/launcher/LauncherConfig.h
++++ b/code/client/launcher/LauncherConfig.h
+@@ -24,7 +24,7 @@
+ #define GAME_EXECUTABLE L"MaxPayne3.exe"
+ #elif defined(GTA_FIVE)
+ #define PRODUCT_ID CfxState::ProductID::FIVEM
+-#define PRODUCT_NAME L"FiveM"
++#define PRODUCT_NAME L"Alfa MP"
+ #define GAME_EXECUTABLE L"GTA5.exe"
+ #define CONTENT_NAME "fivereborn"
+ #define LINK_PROTOCOL L"fivem"
+diff --git a/code/client/launcher/MiniDump.cpp b/code/client/launcher/MiniDump.cpp
+index 76de5af..e28e6cd 100644
+--- a/code/client/launcher/MiniDump.cpp
++++ b/code/client/launcher/MiniDump.cpp
+@@ -451,7 +451,7 @@ static void OverloadCrashData(TASKDIALOGCONFIG* config)
+ 	if (blame)
+ 	{
+ 		static std::wstring errTitle = fmt::sprintf(L"%s encountered an error", blame);
+-		static std::wstring errDescription = fmt::sprintf(L"FiveM crashed due to %s.\n%s", blame, blame_two);
++		static std::wstring errDescription = fmt::sprintf(L"Alfa MP crashed due to %s.\n%s", blame, blame_two);
+ 
+ 		config->pszMainInstruction = errTitle.c_str();
+ 		config->pszContent = errDescription.c_str();
+@@ -679,7 +679,7 @@ static void GatherCrashInformation()
+ 			OleFlushClipboard();
+ 
+ 			// open message box
+-			MessageBoxW(NULL, va(L"Saved the crash dump as %s. Please upload the .zip file when you're asking for support. (copy/paste to upload)", tempDir), L"CitizenFX", MB_OK | MB_ICONINFORMATION);
++			MessageBoxW(NULL, va(L"Saved the crash dump as %s. Please upload the .zip file when you're asking for support. (copy/paste to upload)", tempDir), L"Alfa MP", MB_OK | MB_ICONINFORMATION);
+ 
+ 			// open Explorer with the file selected
+ 			STARTUPINFOW si = { 0 };
+@@ -953,7 +953,7 @@ void InitializeDumpServer(int inheritedHandle, int parentPid)
+ 													if (wcsstr(filename, L".exe") != nullptr)
+ 													{
+ #ifdef GTA_FIVE
+-														wcscpy(filename, L"\\FiveM.exe");
++														wcscpy(filename, L"\\AlfaMP.exe");
+ #elif defined(IS_RDR3)
+ 														wcscpy(filename, L"\\RedM.exe");
+ #else
+@@ -1376,7 +1376,7 @@ void InitializeDumpServer(int inheritedHandle, int parentPid)
+ 
+ 						if (!cd.empty())
+ 						{
+-							mainInstruction = gettext(L"FiveM crashed... but we're on it!");
++							mainInstruction = gettext(L"Alfa MP crashed... but we're on it!");
+ 							cd += "\n\n";
+ 						}
+ 
+diff --git a/code/client/launcher/launcher.manifest b/code/client/launcher/launcher.manifest
+index 88dcd72..afb3c32 100644
+--- a/code/client/launcher/launcher.manifest
++++ b/code/client/launcher/launcher.manifest
+@@ -36,6 +36,6 @@
+ 	</dependency>
+ 	<assemblyIdentity
+ 		type="win32"
+-		name="FiveM"
++		name="AlfaMP"
+ 		version="1.0.0.0" />
+ </assembly>
+diff --git a/code/client/launcher/launcher.rc b/code/client/launcher/launcher.rc
+index 4765edf..528c490 100644
+--- a/code/client/launcher/launcher.rc
++++ b/code/client/launcher/launcher.rc
+@@ -50,7 +50,7 @@ IDM_BACKDROP			MEOW "backdrop_rdr.png"
+ STRINGTABLE
+ BEGIN
+ #if defined(GTA_FIVE)
+-	IDS_FOLDER_NAME, L"FiveM Application Data"
++	IDS_FOLDER_NAME, L"Alfa MP Application Data"
+ #elif defined(IS_RDR3)
+ 	IDS_FOLDER_NAME, L"RedM Application Data"
+ #else
+@@ -74,13 +74,13 @@ END
+ #endif
+ 
+ #if defined(GTA_FIVE)
+-#define PRODUCT "FiveM"
++#define PRODUCT "Alfa MP"
+ #elif defined(IS_RDR3)
+ #define PRODUCT "RedM"
+ #elif defined(GTA_NY)
+ #define PRODUCT "LibertyM"
+ #else
+-#define PRODUCT "CitizenFX"
++#define PRODUCT "Alfa MP"
+ #endif
+ 
+ #define STR_HELPER(x) #x
+@@ -103,12 +103,12 @@ BEGIN
+     BEGIN
+         BLOCK "040904b0"
+         BEGIN
+-            VALUE "CompanyName", "Cfx.re"
++            VALUE "CompanyName", "Alfa MP"
+ 			VALUE "FileDescription", PRODUCT SUFFIX
+             VALUE "InternalName", PRODUCT
+             VALUE "FileVersion", "2.0.0." STR(EXE_VERSION)
+-            VALUE "LegalCopyright", "(C) 2015-2022 Cfx.re"
+-            VALUE "OriginalFilename", "CitizenMP.exe"
++            VALUE "LegalCopyright", "(C) 2026 Alfa MP"
++            VALUE "OriginalFilename", "AlfaMP.exe"
+             VALUE "ProductName", PRODUCT
+             VALUE "ProductVersion", "2.0.0." STR(EXE_VERSION)
+         END
+diff --git a/code/client/launcher/premake5.lua b/code/client/launcher/premake5.lua
+index d8b37a0..64178e2 100644
+--- a/code/client/launcher/premake5.lua
++++ b/code/client/launcher/premake5.lua
+@@ -216,7 +216,7 @@ local function launcherpersonality_inner(name)
+ 			targetname "CitizenPayne"
+ 
+ 		filter { "options:game=five" }
+-			targetname "FiveM"
++			targetname "AlfaMP"
+ 			
+ 		filter { "options:game=launcher" }
+ 			targetname "CfxLauncher"
+diff --git a/code/components/citizen-scripting-core/src/Profiler.cpp b/code/components/citizen-scripting-core/src/Profiler.cpp
+index d897e57..6f4b765 100644
+--- a/code/components/citizen-scripting-core/src/Profiler.cpp
++++ b/code/components/citizen-scripting-core/src/Profiler.cpp
+@@ -229,7 +229,7 @@ auto ConvertToJSON(const ProfilerRecording& recording) -> json
+ 					json::object({
+ 						{ "frame", "FADE" },
+ 						{ "url", "https://cfx.re/" },
+-						{ "name", "CitizenFX" },
++						{ "name", "Alfa MP" },
+ 						{ "processId", 1 },
+ 					})
+ 				}) },
+diff --git a/code/components/citizen-scripting-mono/include/MonoComponentHostShared.h b/code/components/citizen-scripting-mono/include/MonoComponentHostShared.h
+index 730629c..e3a2339 100644
+--- a/code/components/citizen-scripting-mono/include/MonoComponentHostShared.h
++++ b/code/components/citizen-scripting-mono/include/MonoComponentHostShared.h
+@@ -19,7 +19,7 @@
+ #ifdef IS_FXSERVER
+ #define PRODUCT_NAME "Server"
+ #elif defined(GTA_FIVE)
+-#define PRODUCT_NAME "FiveM"
++#define PRODUCT_NAME "Alfa MP"
+ #elif defined(IS_RDR3)
+ #define PRODUCT_NAME "RedM"
+ #elif defined(GTA_NY)
+diff --git a/code/components/citizen-server-impl/src/InitConnectMethod.cpp b/code/components/citizen-server-impl/src/InitConnectMethod.cpp
+index da99792..728a5b8 100644
+--- a/code/components/citizen-server-impl/src/InitConnectMethod.cpp
++++ b/code/components/citizen-server-impl/src/InitConnectMethod.cpp
+@@ -787,7 +787,7 @@ static InitFunction initFunction([]()
+ 
+ 			if (!gameNameMatch)
+ 			{
+-				sendError("CitizenFX ticket authorization failed. (3)");
++				sendError("Alfa MP ticket authorization failed. (3)");
+ 				return;
+ 			}
+ 
+diff --git a/code/components/conhost-v2/src/UrlConfirmationModal.cpp b/code/components/conhost-v2/src/UrlConfirmationModal.cpp
+index 9a13f79..1bd66e7 100644
+--- a/code/components/conhost-v2/src/UrlConfirmationModal.cpp
++++ b/code/components/conhost-v2/src/UrlConfirmationModal.cpp
+@@ -14,7 +14,7 @@
+ #include <UrlConfirmationExport.h>
+ 
+ #if defined(GTA_FIVE)
+-#define PRODUCT_NAME "FiveM"
++#define PRODUCT_NAME "Alfa MP"
+ #elif defined(IS_RDR3)
+ #define PRODUCT_NAME "RedM"
+ #endif
+diff --git a/code/components/font-renderer/src/GtaGameInterface.cpp b/code/components/font-renderer/src/GtaGameInterface.cpp
+index 9b9a1cc..9ca084b 100644
+--- a/code/components/font-renderer/src/GtaGameInterface.cpp
++++ b/code/components/font-renderer/src/GtaGameInterface.cpp
+@@ -394,7 +394,7 @@ static InitFunction initFunction([] ()
+ 				return L"";
+ 			};
+ 
+-			brandName = L"FiveM";
++			brandName = L"Alfa MP";
+ 			brandingEmoji = getDayEmoji();
+ 
+ #if defined(IS_RDR3)
+diff --git a/code/components/gta-core-five/src/CustomText.cpp b/code/components/gta-core-five/src/CustomText.cpp
+index 9e09a04..2b50739 100644
+--- a/code/components/gta-core-five/src/CustomText.cpp
++++ b/code/components/gta-core-five/src/CustomText.cpp
+@@ -65,7 +65,7 @@ namespace game
+ static HookFunction hookFunction([] ()
+ {
+ 	g_textMap[HashString("PM_PANE_LEAVE")] = "Disconnect";
+-	g_textMap[HashString("FE_THDR_GTAO")] = "FiveM";
++	g_textMap[HashString("FE_THDR_GTAO")] = "Alfa MP";
+ 
+ 	void* getTextPtr = hook::pattern("48 8B CB 8B D0 E8 ? ? ? ? 48 85 C0 0F 95 C0").count(1).get(0).get<void>(5);
+ 	hook::set_call(&g_origGetText, getTextPtr);
+diff --git a/code/components/gta-core-five/src/GameInput.cpp b/code/components/gta-core-five/src/GameInput.cpp
+index 67d93a0..41125c6 100644
+--- a/code/components/gta-core-five/src/GameInput.cpp
++++ b/code/components/gta-core-five/src/GameInput.cpp
+@@ -1439,7 +1439,7 @@ static HookFunction hookFunction([]()
+ 		}
+ 	});
+ 
+-	game::AddCustomText("PM_PANE_CFX", "FiveM");
++	game::AddCustomText("PM_PANE_CFX", "Alfa MP");
+ 
+ 	// Snapmatic gallery error message when not logged-in to the forum / Discourse account
+ 	game::AddCustomText("SG_PH_LS_CL_FL", "To upload Snapmatic photos to the forum, please log in to your Cfx.re account in the main menu.");
+diff --git a/code/components/net/src/NetLibrary.cpp b/code/components/net/src/NetLibrary.cpp
+index 0248189..ab5fea2 100644
+--- a/code/components/net/src/NetLibrary.cpp
++++ b/code/components/net/src/NetLibrary.cpp
+@@ -43,7 +43,7 @@
+ #endif
+ 
+ #ifdef GTA_FIVE
+-#define PRODUCT_NAME "FiveM"
++#define PRODUCT_NAME "Alfa MP"
+ #elif defined(IS_RDR3)
+ #define PRODUCT_NAME "RedM"
+ #endif
+diff --git a/code/components/nui-core/src/NUIInitialize.cpp b/code/components/nui-core/src/NUIInitialize.cpp
+index 192abcd..2e01ffa 100644
+--- a/code/components/nui-core/src/NUIInitialize.cpp
++++ b/code/components/nui-core/src/NUIInitialize.cpp
+@@ -1271,7 +1271,7 @@ void Component_RunPreInit()
+ 	// again, a Win7 SP1 check (Chromium x64 isn't supported below this operating level)
+ 	if (!IsWindows7SP1OrGreater())
+ 	{
+-		FatalError("CitizenFX requires Windows 7 SP1 or higher. Please upgrade to this operating system version to run CitizenFX.");
++		FatalError("Alfa MP requires Windows 7 SP1 or higher. Please upgrade to this operating system version to run Alfa MP.");
+ 	}
+ #endif
+ 
+diff --git a/code/server/launcher/server.rc b/code/server/launcher/server.rc
+index 93b2435..ec1aa3a 100644
+--- a/code/server/launcher/server.rc
++++ b/code/server/launcher/server.rc
+@@ -44,13 +44,13 @@ BEGIN
+     BEGIN
+         BLOCK "040904b0"
+         BEGIN
+-            VALUE "CompanyName", "Cfx.re"
++            VALUE "CompanyName", "Alfa MP"
+ 			VALUE "FileDescription", "Cfx.re Platform Server (FXServer)"
+             VALUE "FileVersion", "1.0.0.0"
+             VALUE "InternalName", "Citizen"
+-            VALUE "LegalCopyright", "(C) 2017-2020 Cfx.re"
+-            VALUE "OriginalFilename", "FXServer.exe"
+-            VALUE "ProductName", "CitizenFX"
++            VALUE "LegalCopyright", "(C) 2026 Alfa MP"
++            VALUE "OriginalFilename", "AlfaServer.exe"
++            VALUE "ProductName", "Alfa MP Server"
+             VALUE "ProductVersion", "1.0.0.0"
+         END
+     END
+diff --git a/ext/cfx-ui/src/assets/languages/locale-cs.json b/ext/cfx-ui/src/assets/languages/locale-cs.json
+index 262adac..53cc50a 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-cs.json
++++ b/ext/cfx-ui/src/assets/languages/locale-cs.json
+@@ -31,7 +31,7 @@
+     "#Settings_LocalhostPort": "Vlastní port",
+     "#Settings_DevMode": "Výv. režim",
+     "#Settings_DevModeDesc": "Povolit \"localhost\" v menu",
+-    "#Settings_Account": "Propojení s Cfx.re účtem",
++    "#Settings_Account": "Propojení s Alfa MP účtem",
+     "#Settings_AccountLink": "Propojit",
+     "#Settings_AccountLinked": "Propojeno: {{ username }}",
+     "#Settings_Boost": "Momentální ZVIDITELNĚNÍ serveru",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-da.json b/ext/cfx-ui/src/assets/languages/locale-da.json
+index 0840f28..3988e28 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-da.json
++++ b/ext/cfx-ui/src/assets/languages/locale-da.json
+@@ -30,8 +30,8 @@
+     "#Settings_LocalhostPortDesc": "Vælg localhost port hvis ikke standard (30120)",
+     "#Settings_DevMode": "Dev tilstand",
+     "#Settings_DevModeDesc": "Aktiver \"localhost\" i hovedmenu",
+-    "#Settings_Account": "Forbundet Cfx.re konto",
+-    "#Settings_AccountLink": "Klik her for at linke din Cfx.re konto",
++    "#Settings_Account": "Forbundet Alfa MP konto",
++    "#Settings_AccountLink": "Klik her for at linke din Alfa MP konto",
+     "#Settings_AccountLinked": "Linket til: {{ username }}",
+     "#Settings_Boost": "Nuværende Server Upvote",
+     "#Settings_BoostLoading": "Indlæser...",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-de.json b/ext/cfx-ui/src/assets/languages/locale-de.json
+index c03db6f..3ed3e2e 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-de.json
++++ b/ext/cfx-ui/src/assets/languages/locale-de.json
+@@ -29,7 +29,7 @@
+     "#Settings_LocalhostPort": "Benutzerdefinierter Port",
+     "#Settings_DevMode": "Entwicklermodus",
+     "#Settings_DevModeDesc": "Aktiviert den \"localhost\" Menüpunkt",
+-    "#Settings_Account": "Verbundenes Cfx.re-Konto",
++    "#Settings_Account": "Verbundenes Alfa MP-Konto",
+     "#Settings_AccountLink": "Verknüpfen",
+     "#Settings_AccountLinked": "Verbunden: {{ username }}",
+     "#Settings_Boost": "Aktueller Server Upvote",
+@@ -101,7 +101,7 @@
+     "#ErrorAction_ContactOwner": "- Kontaktiere [OWNER].",
+     "#ErrorAction_SeeDetailsContactOwner": "- Lese die Fehlermeldung und versuche die Fehler zu beheben.\n- Wenn der Fehler weiterhin auftritt, kontaktiere [OWNER].",
+     "#Error_Server": "Server",
+-    "#Error_Cfx": "Cfx.re",
++    "#Error_Cfx": "Alfa MP",
+     "#EmptyServers_History": "Server auf denen du bereits gespielt hast erscheinen hier. Um einen Server beizutreten, gehe zur Serverliste!",
+     "#Settings_InProcessGpu": "NUI-Beschleunigung",
+     "#Settings_HandbrakeCamera": "Handbremsenkamera",
+@@ -112,7 +112,7 @@
+     "#BuildSwitch_Heading": "{{gameBrand}} erfordert einen Neustart",
+     "#EmptyServers_Favorites": "Deine Lieblingsserver werden hier aufgelistet. Drücke dafür bei deinen Lieblingsservern auf den Stern!",
+     "#ServerDetail_DLCLevel": "DLC-Version",
+-    "#ServerDetail_SupportWarning": "Die Cfx.re-Version dieses Servers wird nicht mehr unterstützt. Siehe https://aka.cfx.re/eos (auf Englisch) für weitere Informationen.",
+-    "#ServerDetail_EOLWarning": "Die Cfx.re-Version dieses Servers hat den \"End-of-Life\"-Status erreicht. Siehe https://aka.cfx.re/eol (auf Englisch) für weitere Informationen.",
++    "#ServerDetail_SupportWarning": "Die Alfa MP-Version dieses Servers wird nicht mehr unterstützt. Siehe https://aka.cfx.re/eos (auf Englisch) für weitere Informationen.",
++    "#ServerDetail_EOLWarning": "Die Alfa MP-Version dieses Servers hat den \"End-of-Life\"-Status erreicht. Siehe https://aka.cfx.re/eol (auf Englisch) für weitere Informationen.",
+     "#ServerDetail_EOLDisable": "Dieser Server kann nicht betreten werden, da er eine Plattform-Version verwendet, welche den \"End-of-Life\"-Status hat."
+ }
+diff --git a/ext/cfx-ui/src/assets/languages/locale-en.json b/ext/cfx-ui/src/assets/languages/locale-en.json
+index 1d8b9cb..14a45ac 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-en.json
++++ b/ext/cfx-ui/src/assets/languages/locale-en.json
+@@ -80,7 +80,7 @@
+   "#Settings_StreamerModeDesc": "Hide sensitive information (e.g. IP addresses) from screen",
+   "#Settings_DevMode": "Dev mode",
+   "#Settings_DevModeDesc": "Enable the \"localhost\" menu item",
+-  "#Settings_Account": "Connected Cfx.re account",
++  "#Settings_Account": "Connected Alfa MP account",
+   "#Settings_AccountLink": "Link",
+   "#Settings_AccountLinked": "Linked: {{ username }}",
+   "#Settings_LinkedIdentity_AddedManually": "Linked by you",
+@@ -162,14 +162,14 @@
+ 	"#ServerDetail_Owner": "Owner",
+   "#ServerDetail_Premium": "FiveM supporter tier",
+   "#ServerDetail_DLCLevel": "DLC level",
+-  "#ServerDetail_SupportWarning": "The Cfx.re platform version this server is using is out of support. See https://aka.cfx.re/eos for more info.",
+-  "#ServerDetail_EOLWarning": "The Cfx.re platform version this server is using has reached end-of-life status. See https://aka.cfx.re/eol for more info.",
++  "#ServerDetail_SupportWarning": "The Alfa MP platform version this server is using is out of support. See https://aka.cfx.re/eos for more info.",
++  "#ServerDetail_EOLWarning": "The Alfa MP platform version this server is using has reached end-of-life status. See https://aka.cfx.re/eol for more info.",
+   "#ServerDetail_Feed_Empty": "The feed of {{feed}} is pretty empty",
+   "#ServerDetail_Feed_ShowMore": "Show more",
+   "#ServerDetail_Feed_LoadError": "Failed to load activity pub feed for {{feed}}",
+   "#ServerDetail_Feed_LoadError_ServerReported": "Server reported:",
+   "#ServerDetail_SupportWarning2_Message": "Server artifact version is outdated",
+-  "#ServerDetail_SupportWarning2_ForOwner_1": "Server artifact your server is using has reached end of support status, which means that Cfx.re team will not provide support for it any longer.",
++  "#ServerDetail_SupportWarning2_ForOwner_1": "Server artifact your server is using has reached end of support status, which means that Alfa MP team will not provide support for it any longer.",
+   "#ServerDetail_SupportWarning2_ForOwner_2": "Please update it as soon as possible!",
+   "#ServerDetail_SupportWarning2_ForPlayer_1": "You can still connect to the server, but the server owner needs to update it.",
+   "#ServerDetail_SupportWarning2_ForPlayer_2": "There is nothing wrong with your game, don't you worry!",
+@@ -218,7 +218,7 @@
+   "#ErrorAction_TryAgainCheckStatus": "- Try again at a later time.\n- Check your network connection and the [STATUSPAGE] page.\n- If the issue persists, contact [SUPPORT].",
+   "#Error_You": "You",
+   "#Error_Server": "Server",
+-  "#Error_Cfx": "Cfx.re",
++  "#Error_Cfx": "Alfa MP",
+ 
+   "#Home_LocalServer": "Local server",
+   "#Home_LocalServer_Title": "Connect to {{name}} on LAN",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-es.json b/ext/cfx-ui/src/assets/languages/locale-es.json
+index 78a307a..6225093 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-es.json
++++ b/ext/cfx-ui/src/assets/languages/locale-es.json
+@@ -29,7 +29,7 @@
+     "#Settings_LocalhostPort": "Puerto personalizado",
+     "#Settings_DevMode": "Modo Dev",
+     "#Settings_DevModeDesc": "Habilita la opción \"localhost\" del menú",
+-    "#Settings_Account": "Cuenta de Cfx.re conectada",
++    "#Settings_Account": "Cuenta de Alfa MP conectada",
+     "#Settings_AccountLink": "Link",
+     "#Settings_AccountLinked": "Vinculada: {{ username }}",
+     "#Settings_Boost": "Upvote actual del servidor",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-fi.json b/ext/cfx-ui/src/assets/languages/locale-fi.json
+index 870725b..6c19f72 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-fi.json
++++ b/ext/cfx-ui/src/assets/languages/locale-fi.json
+@@ -31,7 +31,7 @@
+     "#Settings_LocalhostPort": "Oma portti",
+     "#Settings_DevMode": "Dev-tila",
+     "#Settings_DevModeDesc": "Kytke \"localhost\" valikkoon",
+-    "#Settings_Account": "Yhdistetty Cfx.re-käyttäjä",
++    "#Settings_Account": "Yhdistetty Alfa MP-käyttäjä",
+     "#Settings_AccountLink": "Liitä",
+     "#Settings_AccountLinked": "Liitetty: {{ username }}",
+     "#Settings_Boost": "Nykyinen Server Upvote",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-fr.json b/ext/cfx-ui/src/assets/languages/locale-fr.json
+index bff7ec7..c3547c9 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-fr.json
++++ b/ext/cfx-ui/src/assets/languages/locale-fr.json
+@@ -29,7 +29,7 @@
+     "#Settings_LocalhostPort": "Port personnalisé",
+     "#Settings_DevMode": "Mode développeur",
+     "#Settings_DevModeDesc": "Activer l'onglet \"localhost\"",
+-    "#Settings_Account": "Compte Cfx.re connecté",
++    "#Settings_Account": "Compte Alfa MP connecté",
+     "#Settings_AccountLink": "Lier",
+     "#Settings_AccountLinked": "Lié : {{ username }}",
+     "#Settings_Boost": "Serveur actuellement BOOSTÉ™",
+@@ -90,7 +90,7 @@
+     "#Settings_UseAudioFrameLimiter": "Limiteur de trame audio",
+     "#Settings_CameraShakeDesc": "Désactiver le tremblement de la caméra à troisième personne en courant ou en conduisant un véhicule.",
+     "#Settings_InProcessGpuDesc": "Corrige de \"lag d'interface\" lors d'une utilisation élevée du GPU, mais peut entraîner des problèmes de fiabilité avec des plantages du GPU (nécessitant un redémarrage)",
+-    "#ServerDetail_SupportWarning": "La version de la plateforme Cfx.re utilisée par ce serveur n'est plus prise en charge. Consultez https://aka.cfx.re/eos pour plus d'informations.",
++    "#ServerDetail_SupportWarning": "La version de la plateforme Alfa MP utilisée par ce serveur n'est plus prise en charge. Consultez https://aka.cfx.re/eos pour plus d'informations.",
+     "#ServerDetail_Owner": "Propriétaire",
+     "#Settings_UseAudioFrameLimiterDesc": "Corrigez les problèmes à des fréquences d'images élevées en désactivant rage::g_audUseFrameLimiter",
+     "#Settings_InProcessGpu": "GPU en processus NUI"
+diff --git a/ext/cfx-ui/src/assets/languages/locale-hu.json b/ext/cfx-ui/src/assets/languages/locale-hu.json
+index 18d356f..756a3e3 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-hu.json
++++ b/ext/cfx-ui/src/assets/languages/locale-hu.json
+@@ -33,7 +33,7 @@
+     "#Settings_LocalhostPort": "Egyedi port",
+     "#Settings_DevMode": "Fejlesztői mód",
+     "#Settings_DevModeDesc": "\"localhost\" menü engedélyezése",
+-    "#Settings_Account": "Csatlakoztatott Cfx.re fiók",
++    "#Settings_Account": "Csatlakoztatott Alfa MP fiók",
+     "#Settings_AccountLink": "Összekapcsolás",
+     "#Settings_AccountLinked": "Csatlakoztatott fiók: {{ username }}",
+     "#Settings_Boost": "Jelenlegi szerver Upvote",
+@@ -89,7 +89,7 @@
+     "#ErrorAction_TryAgainCheckStatus": "- Próbálja meg újra egy későbbi időpontban.\n- Ellenőrizze a hálózati kapcsolatot és a [STATUSPAGE] oldalt.\n- Ha a probléma továbbra is fennáll, lépjen kapcsolatba a [SUPPORT]-al.",
+     "#Status_PlayerPeak": "Legnagyobb játékosszám (az elmúlt 24 órában)",
+     "#Error_You": "Te",
+-    "#Error_Cfx": "Cfx.re",
++    "#Error_Cfx": "Alfa MP",
+     "#Settings_UseAudioFrameLimiterDesc": "Akadozás javítása magas képkocka sebességnél a rage::g_audUseFrameLimiter kikapcsolásával",
+     "#Settings_HandbrakeCameraDesc": "A kézifék használatakor automatikusan visszaállítja a járműre a kamera helyzetét",
+     "#Settings_CameraShakeDesc": "Kikapcsolja a TPP kamera rázkódását futás vagy vezetés közben.",
+@@ -100,8 +100,8 @@
+     "#BottomNav_LinkAccount": "Fiók összekapcsolása",
+     "#Settings_UseAudioFrameLimiter": "Audió frekvencia korlátozó",
+     "#ServerDetail_DLCLevel": "DLC szint",
+-    "#ServerDetail_SupportWarning": "A Cfx.re platform verziója, amelyet ez a szerver használ, már nem támogatott. További információért lásd https://aka.cfx.re/eos.",
+-    "#ServerDetail_EOLWarning": "A szerver által használt Cfx.re platform verziója már nem használható. További információért lásd https://aka.cfx.re/eol.",
++    "#ServerDetail_SupportWarning": "A Alfa MP platform verziója, amelyet ez a szerver használ, már nem támogatott. További információért lásd https://aka.cfx.re/eos.",
++    "#ServerDetail_EOLWarning": "A szerver által használt Alfa MP platform verziója már nem használható. További információért lásd https://aka.cfx.re/eol.",
+     "#ServerDetail_EOLDisable": "Ehhez a szerverhez nem lehet csatlakozni, mivel olyan platformverziót használ, amely már nem működőképes.",
+     "#ServerDetail_PrivateDisable": "Ehhez a szerverhez nem lehet csatlakozni, mivel privát.",
+     "#ServerDetail_OfflineDisable": "Ehhez a szerverhez nem lehet csatlakozni, mivel jelenleg nem elérhető.",
+@@ -145,7 +145,7 @@
+     "#DirectConnect_SwitchBuildPureLevelAndConnect": "Játékverzió és a tiszta játékbeállítás átváltása majd csatlakozás",
+     "#DirectConnect_SwitchBuildAndConnect": "Játékverzió átváltása majd csatlakozás",
+     "#ServerDetail_SupportWarning2_Message": "A szerver artifact verziója elavult",
+-    "#ServerDetail_SupportWarning2_ForOwner_1": "Az általad használt szerver artifact elérte a támogatási státusza végét, ami azt jelenti, hogy a Cfx.re csapata nem ad ki többé frissítést hozzá.",
++    "#ServerDetail_SupportWarning2_ForOwner_1": "Az általad használt szerver artifact elérte a támogatási státusza végét, ami azt jelenti, hogy a Alfa MP csapata nem ad ki többé frissítést hozzá.",
+     "#ServerDetail_SupportWarning2_ForOwner_2": "Kérlek, frissítsd a lehető leghamarabb!",
+     "#ServerDetail_SupportWarning2_ForPlayer_1": "Továbbra is csatlakozhatsz a szerverhez, de a szerver tulajdonosának frissítenie kell azt.",
+     "#ServerDetail_SupportWarning2_ForPlayer_2": "Nincs semmi gond a játékoddal, ne aggódj!",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-it.json b/ext/cfx-ui/src/assets/languages/locale-it.json
+index f06ef12..ecad2bb 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-it.json
++++ b/ext/cfx-ui/src/assets/languages/locale-it.json
+@@ -29,7 +29,7 @@
+     "#Settings_LocalhostPort": "Porta Personalizzata",
+     "#Settings_DevMode": "Modalità Sviluppatore",
+     "#Settings_DevModeDesc": "Abilita l'opzione menu \"localhost\"",
+-    "#Settings_Account": "Account Cfx.re connesso",
++    "#Settings_Account": "Account Alfa MP connesso",
+     "#Settings_AccountLink": "Collega",
+     "#Settings_AccountLinked": "Collegato: {{ username }}",
+     "#Settings_Boost": "Upvote Del Server Corrente",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-lt.json b/ext/cfx-ui/src/assets/languages/locale-lt.json
+index ee9f68b..103d0b7 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-lt.json
++++ b/ext/cfx-ui/src/assets/languages/locale-lt.json
+@@ -31,7 +31,7 @@
+     "#Settings_LocalhostPort": "Kitoks port",
+     "#Settings_DevMode": "Kūrėjo režimas",
+     "#Settings_DevModeDesc": "Įjungti \"localhost\" meniu pasirinkimą",
+-    "#Settings_Account": "Sujungta Cfx.re paskyra",
++    "#Settings_Account": "Sujungta Alfa MP paskyra",
+     "#Settings_AccountLink": "Prijungti",
+     "#Settings_AccountLinked": "Prijungtas: {{ username }}",
+     "#Settings_Boost": "Dabartinis remiamas serveris",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-nb_NO.json b/ext/cfx-ui/src/assets/languages/locale-nb_NO.json
+index ff40fc1..2ec23d9 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-nb_NO.json
++++ b/ext/cfx-ui/src/assets/languages/locale-nb_NO.json
+@@ -45,7 +45,7 @@
+     "#Settings_Boost": "Nåværende Tjener Upvote",
+     "#Settings_AccountLinked": "Tilkoblet til {{ username }}",
+     "#Settings_AccountLink": "Koble til",
+-    "#Settings_Account": "Tilkoblet Cfx.re konto",
++    "#Settings_Account": "Tilkoblet Alfa MP konto",
+     "#Settings_DevModeDesc": "Aktiver snarvei til lokal tilkobling",
+     "#Settings_DevMode": "Utviklermodus",
+     "#Settings_LocalhostPort": "Egenfiltrert port",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-nl.json b/ext/cfx-ui/src/assets/languages/locale-nl.json
+index 6669711..e8ab567 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-nl.json
++++ b/ext/cfx-ui/src/assets/languages/locale-nl.json
+@@ -29,7 +29,7 @@
+     "#Settings_LocalhostPort": "Aangepaste poort",
+     "#Settings_DevMode": "Ontwikkelaarsmodus",
+     "#Settings_DevModeDesc": "Schakel de \"localhost\"-menuoptie in of uit",
+-    "#Settings_Account": "Verbonden Cfx.re-account",
++    "#Settings_Account": "Verbonden Alfa MP-account",
+     "#Settings_AccountLink": "Koppelen",
+     "#Settings_AccountLinked": "Gekoppeld: {{ username }}",
+     "#Settings_Boost": "Huidige server-Upvote",
+@@ -92,7 +92,7 @@
+     "#ErrorAction_SeeDetailsContactOwner": "- Lees de foutgegevens en volg deze op.\n- Als deze fout zich blijft voordoen, neem contact op met [OWNER].",
+     "#ErrorAction_TryAgainCheckStatus": "- Probeer het later nog een keer.\n- Controleer of je internetverbinding werkt en kijk op [STATUSPAGE].\n- Als deze fout zich blijft voordoen, neem contact op met [SUPPORT].",
+     "#Error_Server": "Server",
+-    "#Error_Cfx": "Cfx.re",
++    "#Error_Cfx": "Alfa MP",
+     "#Settings_InProcessGpu": "NUI-GPU in het spelproces",
+     "#Settings_InProcessGpuDesc": "Vermindert 'lag' in de interface als de GPU veel gebruikt wordt, maar is mogelijk instabiel (herstart vereist)",
+     "#ServerDetail_PrivateDisable": "Je kunt niet met deze server verbinden omdat deze privé is.",
+@@ -107,8 +107,8 @@
+     "#ServerList_SearchHint": "Zoek of typ een IP-adres",
+     "#ServerList_SearchHintWeb": "Zoeken",
+     "#Settings_HandbrakeCameraDesc": "Centreer de voertuigcamera automatisch als de handrem gebruikt wordt",
+-    "#ServerDetail_SupportWarning": "De versie van het Cfx.re-platform op deze server wordt niet meer ondersteund. Meer informatie op https://aka.cfx.re/eos (Engelstalig).",
+-    "#ServerDetail_EOLWarning": "De versie van het Cfx.re-platform op deze server is niet meer bruikbaar. Meer informatie op https://aka.cfx.re/eol (Engelstalig).",
++    "#ServerDetail_SupportWarning": "De versie van het Alfa MP-platform op deze server wordt niet meer ondersteund. Meer informatie op https://aka.cfx.re/eos (Engelstalig).",
++    "#ServerDetail_EOLWarning": "De versie van het Alfa MP-platform op deze server is niet meer bruikbaar. Meer informatie op https://aka.cfx.re/eol (Engelstalig).",
+     "#ServerDetail_EOLDisable": "Je kunt niet met deze server verbinden omdat deze server te ver verouderd is.",
+     "#ErrorActions": "Wat kan je zelf doen?",
+     "#ErrorDetails": "Foutgegevens",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-pl.json b/ext/cfx-ui/src/assets/languages/locale-pl.json
+index b17ce72..8bd3b48 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-pl.json
++++ b/ext/cfx-ui/src/assets/languages/locale-pl.json
+@@ -31,7 +31,7 @@
+     "#Settings_LocalhostPort": "Niestandardowy port",
+     "#Settings_DevMode": "Tryb developerski",
+     "#Settings_DevModeDesc": "Włącza menu \"localhost\"",
+-    "#Settings_Account": "Powiązane konto Cfx.re",
++    "#Settings_Account": "Powiązane konto Alfa MP",
+     "#Settings_AccountLink": "Połącz",
+     "#Settings_AccountLinked": "Połączono: {{ username }}",
+     "#Settings_Boost": "Aktualny Upvote serwera",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-pt.json b/ext/cfx-ui/src/assets/languages/locale-pt.json
+index b69a6ac..a43f038 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-pt.json
++++ b/ext/cfx-ui/src/assets/languages/locale-pt.json
+@@ -29,7 +29,7 @@
+     "#Settings_LocalhostPort": "Porta personalizada",
+     "#Settings_DevMode": "Modo de desenvolvedor",
+     "#Settings_DevModeDesc": "Ative o item \"localhost\" no menu.",
+-    "#Settings_Account": "Conta do Cfx.re vinculada",
++    "#Settings_Account": "Conta do Alfa MP vinculada",
+     "#Settings_AccountLink": "Vincular",
+     "#Settings_AccountLinked": "Vinculada: {{ username }}",
+     "#Settings_Boost": "Servidor atualmente com Upvote",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-ro.json b/ext/cfx-ui/src/assets/languages/locale-ro.json
+index ce8dbe6..8979947 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-ro.json
++++ b/ext/cfx-ui/src/assets/languages/locale-ro.json
+@@ -33,7 +33,7 @@
+     "#Settings_LocalhostPort": "Port personalizat",
+     "#Settings_DevMode": "Mod Dezvoltator",
+     "#Settings_DevModeDesc": "Activează meniul Localhost",
+-    "#Settings_Account": "Cont Cfx.re Conectat",
++    "#Settings_Account": "Cont Alfa MP Conectat",
+     "#Settings_AccountLink": "Conectează",
+     "#Settings_AccountLinked": "Conectat: {{ username }}",
+     "#Settings_Boost": "Current Server Upvote",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-ru.json b/ext/cfx-ui/src/assets/languages/locale-ru.json
+index fec95f0..acbfade 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-ru.json
++++ b/ext/cfx-ui/src/assets/languages/locale-ru.json
+@@ -29,7 +29,7 @@
+     "#Settings_LocalhostPort": "Пользовательский порт",
+     "#Settings_DevMode": "Режим разработчика",
+     "#Settings_DevModeDesc": "Добавить пункт \"localhost\" в меню (быстрое подключение к локальному серверу)",
+-    "#Settings_Account": "Подключенный аккаунт Cfx.re",
++    "#Settings_Account": "Подключенный аккаунт Alfa MP",
+     "#Settings_AccountLink": "Привязать",
+     "#Settings_AccountLinked": "FiveM аккаунт: {{ username }}",
+     "#Settings_Boost": "Текущий сервер Upvote",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-sv.json b/ext/cfx-ui/src/assets/languages/locale-sv.json
+index 69c5d22..7cc0412 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-sv.json
++++ b/ext/cfx-ui/src/assets/languages/locale-sv.json
+@@ -42,7 +42,7 @@
+     "#Settings_Boost": "Nuvarande server Upvote",
+     "#Settings_AccountLinked": "Kopplat till {{ username }}",
+     "#Settings_AccountLink": "Länk",
+-    "#Settings_Account": "Anslutet Cfx.re-konto",
++    "#Settings_Account": "Anslutet Alfa MP-konto",
+     "#Settings_DevModeDesc": "Aktivera \"lokal anslutning\" i menyn",
+     "#Settings_DevMode": "Utvecklarläge",
+     "#Settings_LocalhostPort": "Annan port",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-tr.json b/ext/cfx-ui/src/assets/languages/locale-tr.json
+index 0a6cea9..80e898a 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-tr.json
++++ b/ext/cfx-ui/src/assets/languages/locale-tr.json
+@@ -42,7 +42,7 @@
+     "#Settings_Boost": "Mevcut Server Upvote",
+     "#Settings_AccountLinked": "Bağlandı: {{ username }}",
+     "#Settings_AccountLink": "Bağla",
+-    "#Settings_Account": "Bağlanmış Cfx.re hesabı",
++    "#Settings_Account": "Bağlanmış Alfa MP hesabı",
+     "#Settings_DevModeDesc": "\"localhost\" seçeneğini aktif et",
+     "#Settings_DevMode": "Dev mod",
+     "#Settings_LocalhostPort": "Özel port",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-zh_Hans.json b/ext/cfx-ui/src/assets/languages/locale-zh_Hans.json
+index f9f7b93..7d20ed2 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-zh_Hans.json
++++ b/ext/cfx-ui/src/assets/languages/locale-zh_Hans.json
+@@ -42,7 +42,7 @@
+     "#Settings_GameStreamProgress": "串流进度",
+     "#Settings_MenuAudioDesc": "在主界面中空闲时启用背景音乐",
+     "#Settings_MenuAudio": "主界面背景音乐",
+-    "#Settings_Account": "连接至Cfx.re帐户",
++    "#Settings_Account": "连接至Alfa MP帐户",
+     "#Settings_DevModeDesc": "启用\\\"LOCALHOST\\\"菜单项\"",
+     "#ServerList_AddFavorite": "加入收藏",
+     "#Settings_StreamerModeDesc": "在界面上隐藏敏感信息（如IP地址）",
+diff --git a/ext/cfx-ui/src/assets/languages/locale-zh_Hant.json b/ext/cfx-ui/src/assets/languages/locale-zh_Hant.json
+index c6784c4..ca6778a 100644
+--- a/ext/cfx-ui/src/assets/languages/locale-zh_Hant.json
++++ b/ext/cfx-ui/src/assets/languages/locale-zh_Hant.json
+@@ -42,7 +42,7 @@
+     "#Settings_Boost": "目前伺服器加成™",
+     "#Settings_AccountLinked": "已連結: {{ username }}",
+     "#Settings_AccountLink": "連結",
+-    "#Settings_Account": "已連接Cfx.re帳號",
++    "#Settings_Account": "已連接Alfa MP帳號",
+     "#Settings_DevModeDesc": "啟用 \"localhost(連接本地)\" 在選單項目中",
+     "#Settings_DevMode": "開發模式",
+     "#Settings_LocalhostPort": "自訂端口",
