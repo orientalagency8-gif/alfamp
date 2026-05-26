@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Alfa MP",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "identifier": "gg.alfamp.launcher",
   "build": {
     "beforeDevCommand": "npm run dev",
