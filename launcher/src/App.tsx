@@ -497,7 +497,7 @@ export function App() {
             <div className="kv"><span>URL</span><code>{MASTER_URL}</code></div>
             <div className="kv"><span>Статус</span><b>{error ? `ошибка: ${error}` : 'онлайн'}</b></div>
             <h3>О программе</h3>
-            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.7</b></div>
+            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.8</b></div>
             <div className="overlay-actions">
               <button className="big-btn ghost" onClick={() => openUrl(RELEASES_URL)}>Все релизы на GitHub</button>
             </div>

@@ -49,11 +49,20 @@ fn client_state() -> ClientState {
     let real_size_ok = std::fs::metadata(&client_path)
         .map(|m| m.len() >= 2 * 1024 * 1024)
         .unwrap_or(false);
-    let not_stub_version = !version
+    // Versions considered STALE (force re-install):
+    //   - anything with "stub" / "placeholder" (test builds)
+    //   - "client-v0.1.x" — pre-rebrand, still shows "FiveM" in UpdaterUI
+    //   - "0.1.0-stub" etc.
+    let fresh_version = version
         .as_deref()
-        .map(|v| v.contains("stub") || v.contains("placeholder"))
+        .map(|v| {
+            let lc = v.to_lowercase();
+            if lc.contains("stub") || lc.contains("placeholder") { return false; }
+            if lc.starts_with("client-v0.1") || lc.starts_with("0.1.") { return false; }
+            true
+        })
         .unwrap_or(false);
-    let installed = client_path.exists() && real_size_ok && not_stub_version;
+    let installed = client_path.exists() && real_size_ok && fresh_version;
 
     let gta_path = gta::detect_gta_path();
     ClientState {
