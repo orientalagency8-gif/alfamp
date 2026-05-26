@@ -300,15 +300,23 @@ export function App() {
 
   const wipeAndReinstall = async () => {
     if (installing) return;
-    if (!confirm('Удалить локальную папку клиента и скачать заново?')) return;
+    // Skip the browser-native confirm() — Tauri 2 WebView2 sometimes blocks it
+    // silently and the button looks dead. Just go.
+    toast('info', 'Закрываю клиент + удаляю папку…');
     try {
       await tauriInvoke('wipe_client');
+    } catch (e: any) {
+      toast('error', `${e}`);
+      return;
+    }
+    try {
       const st = await tauriInvoke<ClientState>('client_state');
       setClientState(st);
-      toast('info', 'Локальная папка очищена. Скачиваю заново…');
+      setOverlayDismissed(false);   // re-open install overlay
+      toast('info', 'Папка очищена. Скачиваю свежий bundle…');
       await installClient();
     } catch (e: any) {
-      toast('error', `Не удалось очистить: ${e}`);
+      toast('error', `Не удалось перезалить: ${e}`);
     }
   };
 
@@ -526,7 +534,7 @@ export function App() {
             <div className="kv"><span>URL</span><code>{MASTER_URL}</code></div>
             <div className="kv"><span>Статус</span><b>{error ? `ошибка: ${error}` : 'онлайн'}</b></div>
             <h3>О программе</h3>
-            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.11</b></div>
+            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.12</b></div>
             <div className="overlay-actions">
               <button className="big-btn ghost" onClick={() => openUrl(RELEASES_URL)}>Все релизы на GitHub</button>
             </div>
