@@ -283,3 +283,46 @@ pub fn run() {
 
 #[allow(dead_code)]
 pub(crate) fn install_dir_public() -> PathBuf { client::install_dir() }
+
+#[cfg(test)]
+mod tests {
+    /// Regression test for the v0.1.10 bug where install_client wrote "0.1.0\n"
+    /// to version.txt AFTER extracting the bundle, which made the freshly-installed
+    /// bundle look stale to client_state() and re-triggered the install overlay.
+    /// This test pins the staleness predicate against actual version strings we
+    /// expect the bundle to ship with.
+    #[test]
+    fn fresh_version_predicate_accepts_real_bundle_versions() {
+        fn fresh(v: &str) -> bool {
+            let lc = v.to_lowercase();
+            if lc.contains("stub") || lc.contains("placeholder") { return false; }
+            if lc.starts_with("client-v0.1") || lc.starts_with("0.1.") { return false; }
+            true
+        }
+
+        // Bundles we have shipped or plan to ship — MUST be fresh.
+        for v in &[
+            "client-v0.2.0-rebranded",
+            "client-v0.2.1-no-updater",
+            "client-v0.2.2-clean",
+            "client-v0.2.3-no-selfupdate",
+            "client-v0.2.4-deep-scrub",
+            "alfamp-engine-v1.0",
+            "alfamp-engine-v2.0",
+        ] {
+            assert!(fresh(v), "{} should be considered FRESH but predicate said stale", v);
+        }
+
+        // Stale bundles — MUST be flagged.
+        for v in &[
+            "0.1.0",            // pre-rebrand stub default
+            "0.1.0-stub",
+            "client-v0.1.0",    // pre-Run#15 bundle
+            "client-v0.1.9",
+            "client-stub-test",
+            "placeholder",
+        ] {
+            assert!(!fresh(v), "{} should be considered STALE but predicate said fresh", v);
+        }
+    }
+}

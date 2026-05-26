@@ -1,6 +1,6 @@
 [package]
 name = "alfamp-launcher"
-version = "0.1.10"
+version = "0.1.11"
 description = "Alfa MP launcher"
 authors = ["Alfa MP team"]
 edition = "2021"

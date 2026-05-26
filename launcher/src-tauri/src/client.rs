@@ -96,8 +96,13 @@ pub async fn download_and_install(app: AppHandle, url: String) -> Result<()> {
     // Clean up the temp zip
     let _ = std::fs::remove_file(&tmp);
 
-    // Write a small version stamp (best-effort)
-    let _ = std::fs::write(dest_dir.join("version.txt"), "0.1.0\n");
+    // IMPORTANT: do NOT overwrite version.txt here.
+    // The bundle on /static already contains its own version.txt (e.g.
+    // "client-v0.2.4-deep-scrub" or "alfamp-engine-v1.0"). Overwriting it
+    // with a static string would defeat the launcher's stale-version
+    // auto-detect — v0.1.10's check rejects any version starting with
+    // "0.1." or "client-v0.1.", which would make the freshly-installed
+    // bundle look stale and re-trigger the install overlay forever.
 
     Ok(())
 }
