@@ -270,12 +270,28 @@ export function App() {
     }
   };
 
+  // Manual override — lets user dismiss the install overlay even if client_state
+  // hasn't auto-refreshed for some reason.
+  const [overlayDismissed, setOverlayDismissed] = useState(false);
+
   const installClient = async () => {
     if (installing) return;
     setInstalling(true);
     setProgress({ stage: 'downloading', received: 0, total: 0, message: 'старт…' });
     try {
       await tauriInvoke('download_client', { url: CLIENT_BUNDLE_URL });
+      // Install completed — explicitly refresh state, don't rely on the
+      // 'done' event alone (it might be missed/dropped on slow machines).
+      setInstalling(false);
+      setProgress({ stage: 'done', received: 0, total: 0, message: null });
+      try {
+        const st = await tauriInvoke<ClientState>('client_state');
+        setClientState(st);
+        if (st.installed) {
+          toast('success', `Игровой клиент установлен (${st.version || ''})`);
+          setOverlayDismissed(true); // auto-close
+        }
+      } catch {}
     } catch (e: any) {
       setInstalling(false);
       toast('error', `Установка не удалась: ${e}`);
@@ -313,7 +329,7 @@ export function App() {
   };
 
   // -- first-run install screen ----------------------------------------------
-  const showInstallScreen = clientState && !clientState.installed;
+  const showInstallScreen = clientState && !clientState.installed && !overlayDismissed;
 
   // -- render ---------------------------------------------------------------
   return (
@@ -437,7 +453,10 @@ export function App() {
       {showInstallScreen && (
         <div className="overlay">
           <div className="overlay-card">
-            <h2>Установите игровой клиент Alfa MP</h2>
+            <div className="row-between">
+              <h2>Установите игровой клиент Alfa MP</h2>
+              <button className="icon-btn" onClick={() => setOverlayDismissed(true)} title="Закрыть"><CloseIcon /></button>
+            </div>
             <p>Для подключения к серверам нужен сам клиент Alfa MP (~500 МБ). Он будет установлен в <code>{clientState?.install_dir}</code>.</p>
             <p className="muted">
               {clientState?.gta_path
@@ -460,9 +479,19 @@ export function App() {
               </div>
             )}
             <div className="overlay-actions">
-              <button className="big-btn primary" disabled={installing} onClick={installClient}>
-                {installing ? 'Установка…' : 'Скачать и установить'}
-              </button>
+              {progress?.stage === 'done' ? (
+                <button className="big-btn primary" onClick={async () => {
+                  try {
+                    const st = await tauriInvoke<ClientState>('client_state');
+                    setClientState(st);
+                  } catch {}
+                  setOverlayDismissed(true);
+                }}>Готово, закрыть</button>
+              ) : (
+                <button className="big-btn primary" disabled={installing} onClick={installClient}>
+                  {installing ? 'Установка…' : 'Скачать и установить'}
+                </button>
+              )}
               <button className="big-btn ghost" onClick={() => openUrl(RELEASES_URL)}>Скачать вручную</button>
               <button className="big-btn ghost" onClick={reDetectGta}>Найти GTA V заново</button>
             </div>
@@ -497,7 +526,7 @@ export function App() {
             <div className="kv"><span>URL</span><code>{MASTER_URL}</code></div>
             <div className="kv"><span>Статус</span><b>{error ? `ошибка: ${error}` : 'онлайн'}</b></div>
             <h3>О программе</h3>
-            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.8</b></div>
+            <div className="kv"><span>Лаунчер</span><b>Alfa MP Launcher v0.1.9</b></div>
             <div className="overlay-actions">
               <button className="big-btn ghost" onClick={() => openUrl(RELEASES_URL)}>Все релизы на GitHub</button>
             </div>
