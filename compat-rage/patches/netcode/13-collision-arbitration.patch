@@ -1,0 +1,58 @@
+# Phase 2.4 — Server-arbitrated collision resolution.
+#
+# Two players ram each other. Currently their clients independently simulate
+# the impact → outcomes diverge. Worst case one player phases through the other.
+# We make the server arbiter.
+#
+# Target files:
+#   NEW: code/components/citizen-server-impl/src/state/CollisionArbiter.cpp
+#   PATCH: code/components/extra-natives-five/src/CollisionTracking.cpp
+#
+# === Flow ===
+#
+# Both clients detect their own collision against an entity owned by another
+# client. Both send to server: COLLISION_DETECTED {
+#     ourVehicleId, theirVehicleId,
+#     ourPreImpactState (pos, vel, ang_vel),
+#     timestampClient
+# }
+#
+# Server arbitrates:
+# 1. Match the two reports (within 200 ms window).
+# 2. Pick the more-recent of the two pre-impact states (less stale).
+# 3. Run a single rigid-body collision math step on server.
+# 4. Broadcast authoritative post-collision state to both clients (and observers).
+# 5. Both clients soft-reconcile (Phase 1.3 hooks in here).
+#
+# === Math: simple Newtonian elastic-inelastic collision ===
+#
+# v1' = ((m1 - e*m2) * v1 + (1+e) * m2 * v2) / (m1 + m2)
+# v2' = ((m2 - e*m1) * v2 + (1+e) * m1 * v1) / (m1 + m2)
+#
+# Where e = coefficient of restitution (e.g. 0.4 for car-to-car).
+# Angular component derived from collision point relative to each car's center.
+#
+# === Damage ===
+#
+# Total kinetic energy lost = 0.5 * (m1 + m2) * (v_rel)² * (1 - e²)
+# Distributed proportionally to each car's mass and incoming velocity.
+#
+# === Failure modes ===
+#
+# 1. Only one report arrives (other client crashed mid-collision): treat the
+#    single-sided report as canonical.
+# 2. Reports arrive > 200 ms apart: treat as two separate events (each car had
+#    a follow-up collision with the other).
+# 3. Disagreement on participant (A says hit B, B says hit C): trust raycast
+#    on server using rewound positions.
+#
+# === Convars ===
+#
+#   sv_arbitratedCollisions       on|off   default ON (post-stabilization)
+#   sv_collisionElasticity        0.0-1.0  default 0.4 (cars)
+#   sv_collisionDamageMultiplier  0.5-2.0  default 1.0
+#
+# === Cost ===
+#
+# CPU: trivial (one math step per arbitrated collision; collisions are rare on a tick scale).
+# Memory: 1 KB per active arbitration window (auto-released after broadcast).

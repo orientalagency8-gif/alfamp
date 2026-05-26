@@ -1,0 +1,66 @@
+# Phase 1.3 — Soft reconciliation (no teleports).
+#
+# Replace hard-snap correction with smooth lerp over 500 ms when client/server
+# position disagrees by > 5 cm but < 50 m. Above 50 m we still snap (assume
+# legit teleport, e.g. cinematic camera or scripted move).
+#
+# Target files:
+#   code/components/gta-streaming-five/src/SyncTrees_Five.cpp
+#   NEW: code/components/gta-streaming-five/src/SoftReconciler.cpp
+#   NEW: code/components/gta-streaming-five/include/SoftReconciler.h
+
+# === Algorithm ===
+#
+# class SoftReconciler {
+#     struct CorrectionState {
+#         Vec3  startPos, targetPos;
+#         Quat  startRot, targetRot;
+#         float startTime, duration;
+#     };
+#     std::unordered_map<EntityId, CorrectionState> active;
+#
+#     void OnSnapshotReceived(EntityId id, Vec3 serverPos, Quat serverRot) {
+#         Vec3 currentPos = GetEntityPos(id);
+#         float delta = distance(currentPos, serverPos);
+#
+#         if (delta < 0.05f) return;                          // within tolerance
+#         if (delta > 50.0f) { TeleportEntity(id, serverPos); return; }   // legit jump
+#
+#         active[id] = { currentPos, serverPos, GetCurrentRot(id), serverRot,
+#                        GetGameTime(), 0.5f };                // 500 ms blend
+#     }
+#
+#     void Tick(float dt) {
+#         for (auto& [id, c] : active) {
+#             float t = (GetGameTime() - c.startTime) / c.duration;
+#             if (t >= 1.0f) { SetEntityPos(id, c.targetPos); SetEntityRot(id, c.targetRot); erase; }
+#             else {
+#                 float s = smoothstep(0, 1, t);
+#                 SetEntityPos(id, lerp(c.startPos, c.targetPos, s));
+#                 SetEntityRot(id, slerp(c.startRot, c.targetRot, s));
+#             }
+#         }
+#     }
+# };
+
+# === Hook points ===
+#
+# --- a/code/components/gta-streaming-five/src/SyncTrees_Five.cpp
+# +++ b/code/components/gta-streaming-five/src/SyncTrees_Five.cpp
+# @@ -300,7 +300,11 @@ void CVehicleSyncTree::ApplyToObject(CObject* obj, ...)
+# -    SetEntityCoords(obj, serverState.pos, ...);   // <-- the hard snap
+# +    if (GetCvar("sv_softReconcile", true)) {
+# +        g_softReconciler.OnSnapshotReceived(obj->Id, serverState.pos, serverState.rot);
+# +    } else {
+# +        SetEntityCoords(obj, serverState.pos, ...);
+# +    }
+
+# === Tunables (convars to expose) ===
+#   sv_softReconcile          on|off       (default on)
+#   sv_reconcileDuration      0.3..1.0     (default 0.5 s)
+#   sv_reconcileToleranceM    0.02..0.20   (default 0.05 m)
+#   sv_reconcileHardSnapM     20..100      (default 50 m)
+
+# === Backout ===
+# If players report "rubber-band" issues (likely on bad networks), set
+# sv_softReconcile false to revert to hard-snap behavior immediately.

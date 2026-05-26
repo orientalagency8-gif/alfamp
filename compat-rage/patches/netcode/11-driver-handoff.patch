@@ -1,0 +1,58 @@
+# Phase 2.2 — Atomic driver handoff protocol.
+#
+# Fix the "car hops when changing drivers" jitter. Replace stock CFX
+# ownership transfer (which has a window where neither client owns and the
+# vehicle freezes) with a one-frame atomic CAS.
+#
+# Target file:
+#   code/components/citizen-server-impl/src/state/ServerGameState.cpp
+#     specifically MoveEntityToCandidate() and surrounding ownership migration
+#
+# === Stock flow (bad) ===
+#
+#   Player A exits → CFX marks vehicle "transferring"
+#                  → A stops simulating (vehicle goes inert)
+#                  → All clients see momentary stop
+#                  → After N ms, server elects B
+#                  → B starts simulating (vehicle resumes)
+#                  → Visible glitch
+#
+# === New atomic flow ===
+#
+# void AtomicHandoff(EntityId vehId, ClientId oldOwner, ClientId newOwner) {
+#     // 1. Server captures last known state from oldOwner's most recent snapshot
+#     VehicleState snapshot = lastClientStates[oldOwner][vehId];
+#
+#     // 2. Server seeds the new owner with that state IMMEDIATELY
+#     SendPacket(newOwner, OWNERSHIP_GRANT { vehId, snapshot, takeEffectFrame: nextFrame });
+#
+#     // 3. Server informs old owner to stop sim AFTER newOwner ack
+#     ScheduleAfterAck(newOwner, [oldOwner, vehId]{
+#         SendPacket(oldOwner, OWNERSHIP_REVOKE { vehId });
+#     });
+#
+#     // 4. All viewers get a one-packet "newOwner=B" update; their interpolation
+#     //    just keeps going with the same state but different source.
+#     BroadcastPacket(OWNERSHIP_CHANGED { vehId, newOwner });
+# }
+#
+# Net effect: vehicle never has zero owners. One frame the snapshots come from A,
+# next frame from B. No inert gap.
+#
+# === Failure modes handled ===
+#
+# 1. NewOwner doesn't ack within 500 ms → server retries with different candidate
+# 2. OldOwner already disconnected → server is the bridge owner for that one frame
+# 3. Vehicle was empty (no driver) → server picks geographically nearest player
+#
+# === Convars ===
+#
+#   sv_atomicHandoff           on|off   default ON
+#   sv_handoffAckTimeoutMs     200-1000 default 500
+#
+# === Risk ===
+#
+# Edge case: A is driving full speed when they get kicked. Without atomic
+# handoff, vehicle frozen mid-street, glitches collision. With handoff,
+# nearest-other-player becomes new owner and inherits the velocity instantly.
+# This is the desired behavior.

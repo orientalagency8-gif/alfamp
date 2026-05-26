@@ -1,0 +1,74 @@
+# Phase 1.4 — Adaptive sync priority by distance.
+#
+# Currently all entities in streaming_distance sync at the same cadence. We add
+# tiered priority so close entities get more frequent updates than far ones.
+#
+# Target files:
+#   code/components/citizen-server-impl/src/state/ServerGameState.cpp
+#     - functions: OnClonesSync, ProcessClonesSync, ResortClones
+
+# === Priority tiers (per pair: entity ↔ viewer) ===
+#
+# distance < 30 m   : 60 Hz  (cars you're racing alongside)
+# 30 m <= d < 100 m : 30 Hz  (cars on the same street)
+# 100 m <= d < 200 m: 10 Hz  (cars in your neighborhood)
+# 200 m <= d < 300 m:  3 Hz  (distant traffic)
+# d >= 300 m        : event-only (creation/destruction)
+#
+# Implementation: per-(entity, viewer) pair we track lastSyncTime; on each
+# server tick we recompute distance and only enqueue the snapshot if
+# (now - lastSyncTime) >= 1000ms / tierHz.
+
+# === Sketch ===
+#
+# --- a/code/components/citizen-server-impl/src/state/ServerGameState.cpp
+# +++ b/code/components/citizen-server-impl/src/state/ServerGameState.cpp
+# @@ -3100,6 +3100,28 @@ void ServerGameState::OnClonesSync(...)
+# +
+# +// ALFA: tiered sync rate by distance
+# +static float ComputeSyncIntervalMs(float distanceM)
+# +{
+# +    if (distanceM < 30.0f)  return 16.7f;   // 60 Hz
+# +    if (distanceM < 100.0f) return 33.3f;   // 30 Hz
+# +    if (distanceM < 200.0f) return 100.0f;  // 10 Hz
+# +    if (distanceM < 300.0f) return 333.0f;  // 3 Hz
+# +    return 1e9f;                            // never (event-only)
+# +}
+# +
+#  for (auto& [viewerId, entitiesForViewer] : pendingSync) {
+# +    for (auto& entity : entitiesForViewer) {
+# +        float distance = Distance(GetEntityPos(entity), GetViewerPos(viewerId));
+# +        float intervalMs = ComputeSyncIntervalMs(distance);
+# +        float elapsedMs  = (now - entity.lastSyncedTo[viewerId]) * 1000.0f;
+# +        if (elapsedMs < intervalMs) continue;   // not time yet
+# +        entity.lastSyncedTo[viewerId] = now;
+# +        EnqueueSnapshot(viewerId, entity);
+# +    }
+#  }
+
+# === Convars (live tuning) ===
+#
+#   sv_alfa_priority_tier1_distance     default 30
+#   sv_alfa_priority_tier1_hz           default 60
+#   sv_alfa_priority_tier2_distance     default 100
+#   sv_alfa_priority_tier2_hz           default 30
+#   sv_alfa_priority_tier3_distance     default 200
+#   sv_alfa_priority_tier3_hz           default 10
+#   sv_alfa_priority_tier4_distance     default 300
+#   sv_alfa_priority_tier4_hz           default 3
+#
+# Tune these per-server: race-server might want tier1 distance smaller
+# (cars are crowded), open-world freeroam might extend it (you're sparse).
+
+# === Bandwidth model ===
+#
+# Stock CFX 30 Hz × 30 entities = 900 snapshots/sec per viewer
+# This patch: 1×60 + 5×30 + 10×10 + 10×3 + 4×0  ≈ 340 snapshots/sec
+# = 62% reduction in network load, while CLOSE entities sync 2× faster.
+
+# === Quick-win without patch ===
+#
+# Existing convar already gives part of this:
+#   set onesync_distanceCullVehicles true   # binary cull, no tiers
+#
+# This patch is the proper graded version.

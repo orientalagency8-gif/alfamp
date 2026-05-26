@@ -1,0 +1,48 @@
+# Phase 3.2 — Self-hosted Sentry telemetry.
+#
+# Anonymous crash / perf reports flow back to us for product-side decisions.
+# Hosters opt-in by setting `sv_alfaTelemetry true` in their server.cfg.
+#
+# Target files:
+#   PATCH: code/client/launcher/CitiLaunch.cpp     — client Sentry init
+#   PATCH: code/server/launcher/Launcher.cpp       — server Sentry init
+#   NEW:   code/components/citizen-common/src/Telemetry.cpp
+#
+# === What we collect (opt-in only) ===
+#
+# Client:
+#   - Crashes (minidump + stack trace; no game-state data)
+#   - FPS histograms (anonymous; helps us tune perf)
+#   - Network metrics: RTT, packet loss, hitch rate
+#   - Build version + OS
+#
+# Server:
+#   - Crashes
+#   - tick-rate actual vs target
+#   - resource start/stop timings
+#   - hitch warnings ("server thread hitch warning" log)
+#   - peak player count per hour
+#
+# === What we DO NOT collect ===
+#
+# - Player identifiers (no usernames, no IPs, no HWIDs)
+# - Game state (positions, chat, vehicles)
+# - Server admin actions
+# - Voice
+# - Hoster identity (only an anonymized random ID per server)
+#
+# === Infrastructure ===
+#
+# Self-hosted Sentry via docker-compose on our existing VPS:
+#   infra/sentry/docker-compose.yml
+# Public DSN exposed at: https://sentry.alfamp.gg/<project>
+#
+# Storage: 30 days retention, then auto-delete (GDPR compliant).
+#
+# === Convars ===
+#
+#   sv_alfaTelemetry      true|false     default FALSE (opt-in)
+#   sv_alfaTelemetryUrl   url            default our public DSN
+#
+# Hoster sees "Telemetry: ON — helping Alfa MP improve" banner in admin
+# console if enabled. Easy to disable per-restart.

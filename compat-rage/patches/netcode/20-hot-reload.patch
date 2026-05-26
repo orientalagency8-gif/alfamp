@@ -1,0 +1,19 @@
+# Phase 3.1 — Hot-reload SDK for resource development.
+#
+# This one needs NO C++ patch — it's a pure JS/Lua resource that wraps CFX's
+# existing `restart <name>` console command with a file-watcher.
+#
+# Lives as a standalone resource (not in alfamp-client patches/):
+#   compat-rage/resources/alfa-hotreload/
+#
+# When a dev saves any .lua/.js/.cs/.fxmanifest file inside a watched resource,
+# the resource is auto-restarted. Players stay connected; only that resource
+# blinks (CFX preserves player session across resource restarts).
+#
+# Behavior:
+#   - Only active when convar `sv_devMode` is true (prod servers ignore).
+#   - Debounced 500 ms so save-spam doesn't restart 10× per second.
+#   - Reports to admin console: "[hotreload] resource X restarted (3 files changed)".
+#
+# Implementation is in: compat-rage/resources/alfa-hotreload/server.lua
+# (a small 60-line Lua resource — no patch needed).

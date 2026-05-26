@@ -1,0 +1,110 @@
+# Phase 2.1 — STATE-AUTHORITATIVE VEHICLE SYNC. Multi-week R&D.
+#
+# This is the BIG ONE. It flips the trust model from "driver simulates, broadcasts"
+# (owner-auth, what FiveM/RAGE/altV-v1 do) to "server simulates, broadcasts state"
+# (state-auth, what CS:GO/Valorant/Apex do for player movement).
+#
+# Why it matters:
+#   - End to vehicle rubber-banding on bad-network drivers (server simulates evenly)
+#   - Cheaters can't speedhack/teleport their cars — server validates physics
+#   - Anti-cheat foundation: replays, hit-reg, all become consistent
+#
+# Why it's hard:
+#   - Need to extract RAGE physics constants from GTA V (legal: read at runtime
+#     via citizen-mod-loader, not redistribute)
+#   - Server tick must run physics for every "authoritative" vehicle (~30 simul.)
+#   - Client must trust server state more than its local prediction (snap on
+#     mismatch beyond input-prediction tolerance)
+#
+# === High-level architecture ===
+#
+#   ┌────────────┐   inputs (steer, throttle, brake, ts)   ┌────────────┐
+#   │   Driver   │  ──────────────────────────────────────► │   Server   │
+#   │   client   │                                          │            │
+#   │            │                                          │ run RAGE   │
+#   │ predicts   │                                          │ physics    │
+#   │ locally    │  ◄───────────────────────────────────── │ for car    │
+#   │ for resp.  │   state @ ts (pos, rot, vel, ang_vel)   │ at tick    │
+#   │            │                                          │            │
+#   └────────────┘                                          │ broadcast  │
+#                                                           │ state to   │
+#   ┌────────────┐                                          │ all viewers│
+#   │  Viewer    │  ◄────────────────────────────────────── │            │
+#   │  client    │                state                     └────────────┘
+#   └────────────┘
+#
+# Driver client still predicts locally (no input lag), but the server's state is
+# canonical. Driver client reconciles smoothly to server (uses our Phase 1.3).
+#
+# === New files ===
+#
+#   code/components/citizen-server-impl/include/state/StateAuthority.h
+#   code/components/citizen-server-impl/src/state/StateAuthority.cpp
+#   code/components/citizen-server-impl/src/state/VehiclePhysics.cpp
+#   code/components/gta-streaming-five/src/AuthoritativeVehicleClient.cpp
+#
+# === Schema additions ===
+#
+# Client → Server (every input frame, ~60 Hz):
+#   struct VehicleInput {
+#       uint64 vehicleId;
+#       uint32 frameTs;             // client frame timestamp
+#       int16  steerAngle_q8_7;
+#       uint8  throttle, brake, handbrake, gearShift;  // q8.0
+#       uint8  buttonFlags;         // horn, lights, etc
+#   }                                                  // 16 bytes/frame
+#
+# Server → Client (response, also 60 Hz):
+#   struct AuthoritativeState {
+#       uint64 vehicleId;
+#       uint32 ackInputTs;          // confirms which input we processed
+#       Vec3   pos;
+#       Quat   rot;
+#       Vec3   vel, angVel;
+#       uint16 health;
+#       uint8  bodyDeformation[8];  // crumple zones
+#   }                                                  // 64 bytes/frame
+#
+# === Physics tick (server-side) ===
+#
+# void ProcessVehicleAuthority() {
+#     for (auto& [vehId, authState] : vehicleAuthority) {
+#         VehicleInput latestInput = inputBuffer[vehId].getLatest();
+#         RagePhysicsTick(authState, latestInput, kPhysicsDt);
+#         BroadcastState(vehId, authState, latestInput.frameTs);
+#     }
+# }
+#
+# RagePhysicsTick uses constants extracted from GTA V handling.meta (mass,
+# inertia, suspension, traction). These are read at startup via the existing
+# CFX streaming loader.
+#
+# === Reconciliation ===
+#
+# Driver client compares its prediction at frameTs to server's state at the same
+# frameTs. If divergence > 0.5 m, soft-reconcile (Phase 1.3 covers this).
+# Other viewers just lerp to server state.
+#
+# === Convars ===
+#
+#   sv_authoritative_vehicles      true|false   default FALSE during beta
+#   sv_authoritative_only_subscribed bool       only sim cars with drivers (saves CPU)
+#   sv_auth_inputBufferFrames      4..16        client→server input buffer
+#
+# === Backout path ===
+#
+# Set sv_authoritative_vehicles false → reverts to stock OneSync owner-auth.
+# No client changes needed (clients always send inputs; server just ignores them
+# in owner-auth mode and trusts client snapshots).
+#
+# === Risk register ===
+#
+# 1. CPU explosion on busy server: 30 cars × 60 Hz physics = ~1.5 cores
+#    busy. Mitigation: sv_authoritative_only_subscribed (skip empty cars).
+# 2. Input latency feels heavier for driver if their RTT > 80 ms. Mitigation:
+#    client-side prediction keeps responsiveness, server is just validation.
+# 3. Determinism: same input must produce same output across server restarts.
+#    Risk if we use GTA V's nondeterministic physics. Mitigation: deterministic
+#    integrator using extracted handling constants.
+#
+# Estimated effort: 6-8 weeks of focused work + 2 weeks soak testing.

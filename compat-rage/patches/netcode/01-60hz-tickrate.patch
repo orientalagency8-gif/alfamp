@@ -1,0 +1,45 @@
+# Phase 1.1 — raise OneSync tickrate from 30 → 60 Hz.
+#
+# This is a SKELETON. The real diff will land once we've cloned upstream at the
+# pinned sha and modified these exact symbols. For now the file documents:
+#   (a) which CFX files we patch,
+#   (b) which symbols change,
+#   (c) the diff format the build pipeline expects.
+#
+# DO NOT git-apply this yet — it's a documentation placeholder. Build pipeline
+# will skip it because there are no @@ hunks (git apply returns "patch with only
+# garbage", which we treat as non-fatal warning in the workflow).
+
+# Files to patch (per docs/NETCODE.md §1.1):
+#   code/components/citizen-server-impl/include/state/ServerGameState.h
+#   code/components/citizen-server-impl/src/state/ServerGameState.cpp
+#   data/shared/citizen/scripting/lua/scheduler.lua
+
+# Sketch of the change:
+#
+# --- a/code/components/citizen-server-impl/include/state/ServerGameState.h
+# +++ b/code/components/citizen-server-impl/include/state/ServerGameState.h
+# @@ -45,7 +45,7 @@ namespace fx::sync
+# -static constexpr int kSyncTickRate = 30;
+# +static constexpr int kSyncTickRate = 60;  // ALFA: doubled for visible smoothness
+#
+# --- a/code/components/citizen-server-impl/src/state/ServerGameState.cpp
+# +++ b/code/components/citizen-server-impl/src/state/ServerGameState.cpp
+# @@ -1234,7 +1234,7 @@ void ServerGameState::ProcessClonesSync()
+# -    constexpr auto kTickInterval = std::chrono::milliseconds(33);  // ~30 Hz
+# +    constexpr auto kTickInterval = std::chrono::milliseconds(16);  // ~60 Hz — ALFA
+#
+# Implementation notes:
+# - Verify on 32-player real server that CPU stays under 40% one core
+# - Bandwidth doubles roughly — ok for typical 50 Mbit host upload
+# - Backout convar: `sv_legacy_tickrate true` should restore 30 Hz behavior
+
+# === Convar-only fallback (works without recompiling) ===
+# Until the real patch lands, set these in server.cfg for ~30% of the benefit:
+#
+#   set onesync_distanceCullVehicles true
+#   set onesync_population true
+#   set onesync_workaround763185 1
+#
+# These keep our 30 Hz baseline but cull far entities aggressively, freeing
+# server CPU + bandwidth for closer ones, which feels smoother in practice.

@@ -1,0 +1,68 @@
+# Phase 1.2 — Extended vehicle snapshot (skeleton).
+#
+# Stock OneSync packs vehicles as: position(3f), rotation(3f), velocity(3f).
+# We add: steerAngle, throttle, brake, gear, rpm. Clients use these for
+# dead-reckoning between snapshots → no visible jitter on fast cars.
+#
+# Target files (citizenfx/fivem):
+#   code/components/citizen-server-impl/include/state/SyncTrees_Five.h
+#   code/components/citizen-server-impl/src/state/SyncTrees_Five.cpp
+#   code/components/gta-streaming-five/src/StreamingVehicleHandling.cpp
+#   code/components/gta-streaming-five/src/SyncTrees_Five.cpp
+
+# === Schema delta (bit-packed) ===
+#
+# Old CVehicleGameStateDataNode:
+#   { u32 carID, f32 pos[3], f32 rot[3], f32 vel[3] }                        = 40 bytes / snapshot
+#
+# New ALFA_CVehicleGameStateDataNode (backwards-compatible via version byte):
+#   { u8 version,
+#     u32 carID,
+#     f32 pos[3], f32 rot[3], f32 vel[3],
+#     i16 steerAngle_q8_7,   // -180°..+180° at ~0.008° resolution
+#     u8  throttle_q0_8,     // 0..1.0
+#     u8  brake_q0_8,
+#     u4  gear,              // 0..15 (reverse, neutral, 1..D)
+#     u12 rpm_q4_8,          // 0..4096 RPM at ~16 RPM resolution
+#   }                                                                         = 48 bytes / snapshot
+#
+# 8 bytes additional per snapshot. At 60 Hz × 30 nearby vehicles = ~14 kbit/s
+# extra per player. Trivial vs 50 Mbit average client downlink.
+
+# Sketch:
+#
+# --- a/code/components/citizen-server-impl/include/state/SyncTrees_Five.h
+# +++ b/code/components/citizen-server-impl/include/state/SyncTrees_Five.h
+# @@ -120,6 +120,12 @@ struct CVehicleGameStateDataNode
+#      float velocity[3];
+# +
+# +    // ALFA: extended snapshot for client-side dead-reckoning
+# +    int16_t  steerAngle_q8_7;
+# +    uint8_t  throttle_q0_8;
+# +    uint8_t  brake_q0_8;
+# +    uint16_t gear_rpm;   // u4 gear << 12 | u12 rpm_q4_8
+# };
+
+# Client-side: extract these on receive, drive vehicle handling model so wheels
+# actually turn for the input shown (not just visual interpolation of position).
+#
+# Dead-reckoning algorithm (client-side, runs every frame):
+#
+#   predicted = lerp(
+#       last_snapshot.position,
+#       last_snapshot.position
+#         + last_snapshot.velocity * dt
+#         + 0.5 * derive_acceleration(last_snapshot.throttle, last_snapshot.brake) * dt²,
+#       smoothstep(0, snapshot_interval, time_since_snapshot)
+#   )
+#
+#   wheel_visual_angle = lerp(current, last_snapshot.steerAngle, dt * 12)
+#
+# This is industry-standard "second-order extrapolation" used by altV/Apex/etc.
+
+# === Convar fallback (no patch needed) ===
+# We can't add fields without recompile. But we can already enable client-side
+# velocity-based extrapolation via the existing convar set:
+#
+#   set onesync_workaround763185 1
+#   set sv_endpoint_private 0
