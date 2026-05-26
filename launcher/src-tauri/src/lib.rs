@@ -76,12 +76,60 @@ fn client_state() -> ClientState {
 
 #[tauri::command]
 fn wipe_client() -> Result<(), String> {
+    // First: try to kill any running AlfaMP.exe (and friends) so files aren't locked.
+    #[cfg(windows)]
+    {
+        for proc_name in &["AlfaMP.exe", "AlfaMP_Diag.exe", "CitiTest.exe", "FiveM.exe"] {
+            let _ = std::process::Command::new("taskkill")
+                .args(["/F", "/T", "/IM", proc_name])
+                .output();
+        }
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
+
     let dir = client::install_dir();
     if dir.exists() {
-        std::fs::remove_dir_all(&dir).map_err(|e| format!("wipe failed: {}", e))?;
+        match std::fs::remove_dir_all(&dir) {
+            Ok(()) => {}
+            Err(e) => {
+                let mut locked: Vec<String> = Vec::new();
+                if let Ok(entries) = walk_dir_recursive(&dir) {
+                    for path in entries {
+                        if path.is_file() {
+                            if std::fs::remove_file(&path).is_err() {
+                                locked.push(path.to_string_lossy().into_owned());
+                            }
+                        }
+                    }
+                }
+                let _ = std::fs::remove_dir_all(&dir);
+                if !locked.is_empty() {
+                    let sample = locked.iter().take(3).cloned().collect::<Vec<_>>().join(", ");
+                    return Err(format!(
+                        "Не удалось удалить {} файлов (заняты другим процессом). Закрой все Rockstar/AlfaMP-процессы через Диспетчер задач и повтори. Файлы: {} ... (исходная ошибка: {})",
+                        locked.len(), sample, e
+                    ));
+                }
+            }
+        }
     }
     std::fs::create_dir_all(&dir).map_err(|e| format!("recreate failed: {}", e))?;
     Ok(())
+}
+
+fn walk_dir_recursive(root: &std::path::Path) -> std::io::Result<Vec<std::path::PathBuf>> {
+    let mut out = Vec::new();
+    if !root.exists() { return Ok(out); }
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(d) = stack.pop() {
+        for entry in std::fs::read_dir(&d)? {
+            let entry = entry?;
+            let p = entry.path();
+            if p.is_dir() { stack.push(p.clone()); }
+            out.push(p);
+        }
+    }
+    Ok(out)
 }
 
 #[tauri::command]
